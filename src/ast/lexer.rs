@@ -32,7 +32,7 @@ impl TokenSpan {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Token {
-    pub(crate) kind: TokenKind,
+    pub kind: TokenKind,
     pub(crate) span: TokenSpan,
 }
 

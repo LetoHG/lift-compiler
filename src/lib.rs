@@ -1,20 +1,7 @@
-use std::collections::HashMap;
+pub mod ast; // Declares the `ast` module
+
+use crate::ast::lexer::{Token, TokenKind};
 use std::collections::VecDeque;
-use std::fmt;
-
-struct Operator {
-    precedence: i8,
-    arguments: i8,
-}
-
-impl Operator {
-    fn new(precedence: i8, arguments: i8) -> Self {
-        Self {
-            precedence,
-            arguments,
-        }
-    }
-}
 
 #[derive(Debug)]
 pub enum UpnToken {
@@ -22,48 +9,70 @@ pub enum UpnToken {
     Num(f64),
 }
 
-struct Upn {
-    upn: VecDeque<UpnToken>,
+pub struct Upn {
+    upn: VecDeque<Token>,
 }
 
 impl Upn {
-    fn create(tokens: Vec<UpnToken>) -> Self {
-        let operator_precedence: HashMap<char, Operator> = HashMap::from([
-            ('/', Operator::new(2, 2)),
-            ('*', Operator::new(2, 2)),
-            ('+', Operator::new(1, 2)),
-            ('-', Operator::new(1, 2)),
-        ]);
+    pub fn new() {}
 
-        let mut holding_stack: Vec<UpnToken> = Vec::new();
-        let mut upn: VecDeque<UpnToken> = VecDeque::new();
+    fn get_operator_precedence(op: &TokenKind) -> u8 {
+        match op {
+            TokenKind::Plus => 1,
+            TokenKind::Minus => 1,
+            TokenKind::Astrisk => 2,
+            TokenKind::Slash => 2,
+            _ => 0,
+        }
+    }
+
+    fn unwind_holding_stack(
+        upn: &mut VecDeque<Token>,
+        holding_stack: &mut Vec<Token>,
+        op: &TokenKind,
+    ) {
+        while !holding_stack.is_empty() {
+            let stack_op = holding_stack.last().unwrap();
+            let new_op_prec = Self::get_operator_precedence(op);
+            let stack_op_prec = Self::get_operator_precedence(&stack_op.kind);
+
+            if stack_op_prec >= new_op_prec {
+                upn.push_back(holding_stack.pop().unwrap());
+            } else {
+                break;
+            }
+        }
+    }
+    pub fn create(tokens: Vec<Token>) -> Self {
+        let mut holding_stack: Vec<Token> = Vec::new();
+        let mut upn: VecDeque<Token> = VecDeque::new();
 
         for token in tokens.iter() {
-            match token {
-                UpnToken::Num(i) => {
-                    upn.push_back(UpnToken::Num(i.to_owned()));
+            println!("TOKEN: {:?}", token);
+            match token.kind {
+                TokenKind::Number(_) => upn.push_back(token.clone()),
+                TokenKind::Floating(_) => upn.push_back(token.clone()),
+                TokenKind::Plus => {
+                    Self::unwind_holding_stack(&mut upn, &mut holding_stack, &token.kind);
+                    holding_stack.push(token.clone());
                 }
-                UpnToken::Op(new_op) => {
-                    while !holding_stack.is_empty() {
-                        match holding_stack.last().unwrap() {
-                            UpnToken::Op(stack_op) => {
-                                let new_op_prec = operator_precedence.get(new_op).unwrap();
-                                let stack_op_prec = operator_precedence.get(stack_op).unwrap();
-
-                                if stack_op_prec.precedence >= new_op_prec.precedence {
-                                    upn.push_back(holding_stack.pop().unwrap());
-                                } else {
-                                    break;
-                                }
-                            }
-                            _ => {
-                                // unreachable do nothing
-                            }
-                        }
-                    }
-
-                    holding_stack.push(UpnToken::Op(*new_op));
+                TokenKind::Minus => {
+                    Self::unwind_holding_stack(&mut upn, &mut holding_stack, &token.kind);
+                    holding_stack.push(token.clone());
                 }
+                TokenKind::Astrisk => {
+                    Self::unwind_holding_stack(&mut upn, &mut holding_stack, &token.kind);
+                    holding_stack.push(token.clone());
+                }
+                TokenKind::Slash => {
+                    Self::unwind_holding_stack(&mut upn, &mut holding_stack, &token.kind);
+                    holding_stack.push(token.clone());
+                }
+                TokenKind::LeftParen => todo!(),
+                TokenKind::RightParen => todo!(),
+                TokenKind::Whitespace => todo!(),
+                TokenKind::Bad => todo!(),
+                TokenKind::Eof => (),
             }
         }
         while !holding_stack.is_empty() {
@@ -71,44 +80,39 @@ impl Upn {
         }
 
         print!("UPN: ");
-        for s in upn.iter() {
-            match s {
-                UpnToken::Op(c) => print!("{} ", c),
-                UpnToken::Num(i) => print!("{} ", i),
-            }
+        for token in upn.iter() {
+            print!("{:?} ", token);
         }
         println!("");
 
         Self { upn }
     }
 
-    fn solve(&self) -> Result<f64, String> {
+    pub fn solve(&self) -> Result<f64, String> {
         let mut solve: VecDeque<f64> = VecDeque::new();
 
         for token in self.upn.iter() {
-            match token {
-                UpnToken::Op(op) => match op {
-                    '/' => {
-                        let args = Self::get_op_args(&mut solve, 2);
-                        solve.push_front(args[1] / args[0]);
-                    }
-                    '*' => {
-                        let args = Self::get_op_args(&mut solve, 2);
-                        solve.push_front(args[1] * args[0]);
-                    }
-                    '+' => {
-                        let args = Self::get_op_args(&mut solve, 2);
-                        solve.push_front(args[1] + args[0]);
-                    }
-                    '-' => {
-                        let args = Self::get_op_args(&mut solve, 2);
-                        solve.push_front(args[1] - args[0]);
-                    }
-                    _ => todo!(),
-                },
-                UpnToken::Num(i) => {
-                    solve.push_front(i.to_owned());
+            dbg!(token);
+            match token.kind {
+                TokenKind::Plus => {
+                    let args = Self::get_op_args(&mut solve, 2);
+                    solve.push_front(args[1] + args[0]);
                 }
+                TokenKind::Minus => {
+                    let args = Self::get_op_args(&mut solve, 2);
+                    solve.push_front(args[1] - args[0]);
+                }
+                TokenKind::Astrisk => {
+                    let args = Self::get_op_args(&mut solve, 2);
+                    solve.push_front(args[1] * args[0]);
+                }
+                TokenKind::Slash => {
+                    let args = Self::get_op_args(&mut solve, 2);
+                    solve.push_front(args[1] / args[0]);
+                }
+                TokenKind::Number(i) => solve.push_front(i as f64),
+                TokenKind::Floating(f) => solve.push_front(f),
+                _ => (),
             }
         }
 
@@ -134,10 +138,9 @@ impl Upn {
 
 pub fn evaluate(equation: &str) -> Result<f64, String> {
     let tokens = parse_tokens(equation);
-    // let upn = create_upn(tokens);
-    // let res = solve_upn(upn.upn);
-    let upn = Upn::create(tokens);
-    upn.solve()
+    // let upn = Upn::create(tokens);
+    // upn.solve()
+    return Ok(0.0);
 }
 
 fn parse_tokens(equation: &str) -> Vec<UpnToken> {
