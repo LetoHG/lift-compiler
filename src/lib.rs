@@ -48,7 +48,6 @@ impl Upn {
         let mut upn: VecDeque<Token> = VecDeque::new();
 
         for token in tokens.iter() {
-            println!("TOKEN: {:?}", token);
             match token.kind {
                 TokenKind::Number(_) => upn.push_back(token.clone()),
                 TokenKind::Floating(_) => upn.push_back(token.clone()),
@@ -79,12 +78,6 @@ impl Upn {
             upn.push_back(holding_stack.pop().unwrap());
         }
 
-        print!("UPN: ");
-        for token in upn.iter() {
-            print!("{:?} ", token);
-        }
-        println!("");
-
         Self { upn }
     }
 
@@ -92,7 +85,6 @@ impl Upn {
         let mut solve: VecDeque<f64> = VecDeque::new();
 
         for token in self.upn.iter() {
-            dbg!(token);
             match token.kind {
                 TokenKind::Plus => {
                     let args = Self::get_op_args(&mut solve, 2);
@@ -177,7 +169,6 @@ fn parse_tokens(equation: &str) -> Vec<UpnToken> {
         num_str.clear();
     }
 
-    println!("{:?}", tokens);
     tokens
 }
 

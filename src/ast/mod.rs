@@ -24,6 +24,7 @@ impl Ast {
 
     pub fn visualize(&self) {
         let mut printer = ASTPrinter { indentation: 0 };
+        println!("AST:");
         self.visit(&mut printer);
     }
 }

@@ -68,8 +68,6 @@ impl Lexer {
         let mut kind = TokenKind::Bad;
         let c = self.current_char();
 
-        println!("{:?} '{}' {:?}", self.cursor, c, self.input.len());
-
         if Self::is_number_start(&c) {
             kind = self.consume_number();
         } else if Self::is_whitespace(&c) {
