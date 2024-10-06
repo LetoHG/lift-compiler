@@ -5,3 +5,12 @@ version = 3
 [[package]]
 name = "cli-calculator"
 version = "0.1.0"
+dependencies = [
+ "nerd-font-symbols",
+]
+
+[[package]]
+name = "nerd-font-symbols"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8c948e6071f3ed21cb67b4d17525d6113d64e3f7b60f497dcfcc47477c8837cb"

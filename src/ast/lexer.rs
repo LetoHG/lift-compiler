@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenKind {
     Number(i64),
     Floating(f64),
@@ -13,11 +13,11 @@ pub enum TokenKind {
     Eof,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct TokenSpan {
-    start: usize,
-    end: usize,
-    literal: String,
+    pub(crate) start: usize,
+    pub(crate) end: usize,
+    pub(crate) literal: String,
 }
 
 impl TokenSpan {
@@ -30,10 +30,10 @@ impl TokenSpan {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Token {
-    kind: TokenKind,
-    span: TokenSpan,
+    pub(crate) kind: TokenKind,
+    pub(crate) span: TokenSpan,
 }
 
 impl Token {
