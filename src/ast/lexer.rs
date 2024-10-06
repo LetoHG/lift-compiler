@@ -1,0 +1,156 @@
+#[derive(Debug)]
+pub enum TokenKind {
+    Number(i64),
+    Floating(f64),
+    Plus,
+    Minus,
+    Astrisk,
+    Slash,
+    LeftParen,
+    RightParen,
+    Whitespace,
+    Bad,
+    Eof,
+}
+
+#[derive(Debug)]
+pub struct TokenSpan {
+    start: usize,
+    end: usize,
+    literal: String,
+}
+
+impl TokenSpan {
+    fn new(start: usize, end: usize, literal: String) -> Self {
+        Self {
+            start,
+            end,
+            literal,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Token {
+    kind: TokenKind,
+    span: TokenSpan,
+}
+
+impl Token {
+    fn new(kind: TokenKind, span: TokenSpan) -> Self {
+        Self { kind, span }
+    }
+}
+
+pub struct Lexer {
+    input: String,
+    cursor: usize,
+}
+
+impl Lexer {
+    pub fn new(input: String) -> Self {
+        Self { input, cursor: 0 }
+    }
+
+    pub fn next_token(&mut self) -> Option<Token> {
+        if self.cursor > self.input.len() {
+            return None;
+        }
+        if self.cursor == self.input.len() {
+            self.cursor += 1;
+            return Some(Token::new(
+                TokenKind::Eof,
+                TokenSpan::new(0, 0, '\0'.to_string()),
+            ));
+        }
+
+        let start = self.cursor;
+        let mut kind = TokenKind::Bad;
+        let c = self.current_char();
+
+        println!("{:?} '{}' {:?}", self.cursor, c, self.input.len());
+
+        if Self::is_number_start(&c) {
+            kind = self.consume_number();
+        } else if Self::is_whitespace(&c) {
+            self.consume();
+            kind = TokenKind::Whitespace;
+        } else {
+            kind = self.consume_punctuation();
+        }
+
+        let end = self.cursor;
+        let literal = self.input[start..end].to_string();
+
+        Some(Token::new(kind, TokenSpan::new(start, end, literal)))
+    }
+
+    fn is_number_start(c: &char) -> bool {
+        c.is_digit(10)
+    }
+
+    fn is_whitespace(c: &char) -> bool {
+        c.is_whitespace()
+    }
+
+    fn is_decimal_dot(c: &char) -> bool {
+        *c == '.'
+    }
+
+    fn current_char(&mut self) -> char {
+        self.input.chars().nth(self.cursor).unwrap()
+    }
+
+    fn consume(&mut self) -> Option<char> {
+        if self.cursor >= self.input.len() {
+            return None;
+        }
+        let c = self.current_char();
+        self.cursor += 1;
+        Some(c)
+    }
+
+    fn consume_number(&mut self) -> TokenKind {
+        let mut integer_part: i64 = 0;
+        let mut fractional_part: i64 = 0;
+        let mut divisior_for_fraction: i64 = 1;
+
+        let mut dot_found = false;
+        while let Some(c) = self.consume() {
+            if c.is_digit(10) {
+                if !dot_found {
+                    integer_part = integer_part * 10 + c.to_digit(10).unwrap() as i64;
+                } else {
+                    fractional_part = fractional_part * 10 + c.to_digit(10).unwrap() as i64;
+                    divisior_for_fraction *= 10;
+                }
+            } else if Self::is_decimal_dot(&c) {
+                if dot_found {
+                    break;
+                }
+                dot_found = true;
+            } else {
+                break;
+            }
+        }
+        if dot_found {
+            return TokenKind::Floating(
+                integer_part as f64 + (fractional_part as f64 / divisior_for_fraction as f64),
+            );
+        } else {
+            return TokenKind::Number(integer_part);
+        }
+    }
+
+    fn consume_punctuation(&mut self) -> TokenKind {
+        match self.consume().unwrap() {
+            '+' => TokenKind::Plus,
+            '-' => TokenKind::Minus,
+            '*' => TokenKind::Astrisk,
+            '/' => TokenKind::Slash,
+            '(' => TokenKind::LeftParen,
+            ')' => TokenKind::RightParen,
+            _ => TokenKind::Bad,
+        }
+    }
+}
