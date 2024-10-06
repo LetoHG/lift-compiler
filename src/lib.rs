@@ -132,18 +132,12 @@ impl Upn {
     }
 }
 
-pub fn evaluate(equation: &str) {
+pub fn evaluate(equation: &str) -> Result<f64, String> {
     let tokens = parse_tokens(equation);
     // let upn = create_upn(tokens);
     // let res = solve_upn(upn.upn);
     let upn = Upn::create(tokens);
-    let res = upn.solve();
-
-    println!(
-        "{} = {}",
-        equation.strip_suffix("\n").unwrap(),
-        res.unwrap()
-    );
+    upn.solve()
 }
 
 fn parse_tokens(equation: &str) -> Vec<UpnToken> {
@@ -173,13 +167,38 @@ fn parse_tokens(equation: &str) -> Vec<UpnToken> {
         }
     });
 
-    // Print the parsed tokens
-    // for token in tokens.iter() {
-    //     match token {
-    //         UpnToken::Op(c) => println!("token Op {}", c),
-    //         UpnToken::Num(i) => println!("token Num {}", i),
-    //     }
-    // }
+    // incase line ends with a number
+    if !num_str.is_empty() {
+        let num = num_str.parse::<f64>().unwrap();
+        tokens.push(UpnToken::Num(num));
+        num_str.clear();
+    }
 
+    println!("{:?}", tokens);
     tokens
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn solve_basic_equation() {
+        {
+            let result = evaluate("4 + 2").unwrap_or(0.0);
+            assert_eq!(result, 6.0);
+        }
+        {
+            let result = evaluate("67 * 21").unwrap_or(0.0);
+            assert_eq!(result, 67.0 * 21.0);
+        }
+        {
+            let result = evaluate("67 * 21").unwrap_or(0.0);
+            assert_eq!(result, 67.0 * 21.0);
+        }
+        {
+            let result = evaluate("2.718281828 / 1.654 + 675 / 54 * 3").unwrap_or(0.0);
+            assert_eq!(result, 2.718281828 / 1.654 + 675.0 / 54.0 * 3.0);
+        }
+    }
 }
