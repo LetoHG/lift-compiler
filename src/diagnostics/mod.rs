@@ -2,15 +2,17 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::ast::lexer::{Token, TokenKind};
 
+pub mod printer;
+pub mod sourcetext;
 pub enum DiagnosticKind {
     Error,
     Warning,
 }
 
 pub struct Diagnostic {
-    message: String,
-    kind: DiagnosticKind,
-    token: Token,
+    pub(crate) message: String,
+    pub(crate) kind: DiagnosticKind,
+    pub(crate) token: Token,
 }
 
 impl Diagnostic {
@@ -24,7 +26,7 @@ impl Diagnostic {
 }
 
 pub struct DiagnosticsColletion {
-    diagnostics: Vec<Diagnostic>,
+    pub diagnostics: Vec<Diagnostic>,
 }
 
 pub type DiagnosticsColletionCell = Rc<RefCell<DiagnosticsColletion>>;
@@ -36,22 +38,34 @@ impl DiagnosticsColletion {
         }
     }
 
-    pub fn report_error(&mut self, message: String, token: Token) {
-        self.diagnostics
-            .push(Diagnostic::new(message, DiagnosticKind::Error, token));
+    pub fn report_error(&mut self, message: String, token: &Token) {
+        self.diagnostics.push(Diagnostic::new(
+            message,
+            DiagnosticKind::Error,
+            token.clone(),
+        ));
     }
 
-    pub fn report_warning(&mut self, message: String, token: Token) {
-        self.diagnostics
-            .push(Diagnostic::new(message, DiagnosticKind::Warning, token));
+    pub fn report_warning(&mut self, message: String, token: &Token) {
+        self.diagnostics.push(Diagnostic::new(
+            message,
+            DiagnosticKind::Warning,
+            token.clone(),
+        ));
     }
 
-    pub fn report_unexpected_token(&mut self, expected_tokenkind: TokenKind, found_token: Token) {
+    pub fn report_unexpected_token(&mut self, expected_tokenkind: &TokenKind, found_token: &Token) {
         self.report_error(
             format!(
-                "Expected <{}> but found <{}>",
+                "Expected <{}>, but found <{}>",
                 expected_tokenkind, found_token.kind
             ),
+            found_token,
+        );
+    }
+    pub fn report_expected_expression(&mut self, found_token: &Token) {
+        self.report_error(
+            format!("Expected expression, but found <{}>", found_token.kind),
             found_token,
         );
     }

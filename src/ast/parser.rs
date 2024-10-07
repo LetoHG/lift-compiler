@@ -1,3 +1,5 @@
+use std::borrow::BorrowMut;
+
 use crate::ast::lexer::{Lexer, Token, TokenKind};
 use crate::ast::{ASTExpression, ASTStatement};
 use crate::diagnostics::DiagnosticsColletionCell;
@@ -39,57 +41,87 @@ impl Parser {
     }
 
     pub fn next_statement(&mut self) -> Option<ASTStatement> {
-        let token = self.current_token()?;
-        let expr = self.parse_expression()?;
-        Some(ASTStatement::expression(expr))
+        if self.current_token().kind == TokenKind::Eof {
+            return None;
+        }
+        Some(self.parse_statement())
     }
 
-    fn current_token(&self) -> Option<&Token> {
+    fn parse_statement(&mut self) -> ASTStatement {
+        let expr = self.parse_expression();
+        ASTStatement::expression(expr)
+    }
+
+    fn current_token(&self) -> &Token {
         self.peek(0)
     }
 
-    fn peek(&self, offset: isize) -> Option<&Token> {
-        self.tokens.get((self.cursor as isize + offset) as usize)
+    fn peek(&self, offset: isize) -> &Token {
+        let index = std::cmp::min(
+            (self.cursor as isize + offset) as usize,
+            self.tokens.len() - 1,
+        );
+        self.tokens.get(index).unwrap()
     }
 
-    fn consume(&mut self) -> Option<&Token> {
+    fn consume(&mut self) -> &Token {
         self.cursor += 1;
-        let token = self.peek(-1)?;
-        Some(token)
+        self.peek(-1)
     }
 
-    fn parse_expression(&mut self) -> Option<ASTExpression> {
+    fn consume_expected(&mut self, expected: TokenKind) -> &Token {
+        let token = self.consume();
+        if token.kind != expected {
+            // self.diagnostics_colletion
+            //     .borrow_mut()
+            //     .report_unexpected_token(&expected, token);
+        }
+        token
+    }
+
+    fn parse_expression(&mut self) -> ASTExpression {
         self.parse_binary_expression(0)
     }
 
-    fn parse_primary_expression(&mut self) -> Option<ASTExpression> {
-        let token = self.consume()?;
+    fn parse_primary_expression(&mut self) -> ASTExpression {
+        let token = self.consume();
         match token.kind {
-            TokenKind::Integer(i) => Some(ASTExpression::integer(i)),
-            TokenKind::Floating(i) => Some(ASTExpression::float(i)),
-            _ => None,
+            TokenKind::Integer(i) => ASTExpression::integer(i),
+            TokenKind::Floating(i) => ASTExpression::float(i),
+            TokenKind::LeftParen => {
+                let expr = self.parse_binary_expression(0);
+                let found_token = self.consume_expected(TokenKind::RightParen);
+                // return ASTExpression::error(found_token.span.clone());
+                expr
+            }
+            _ => {
+                // self.diagnostics_colletion
+                //     .get_mut()
+                //     .report_expected_expression(token);
+                ASTExpression::error(token.span.clone())
+            }
         }
     }
 
-    fn parse_binary_expression(&mut self, precedence: u8) -> Option<ASTExpression> {
-        let mut left = self.parse_primary_expression()?;
+    fn parse_binary_expression(&mut self, precedence: u8) -> ASTExpression {
+        let mut left = self.parse_primary_expression();
 
         while let Some(operator) = self.parse_binary_operator() {
             self.consume();
 
             let operator_precedence = operator.precedence();
             if operator_precedence >= precedence {
-                let right = self.parse_binary_expression(operator_precedence)?;
+                let right = self.parse_binary_expression(operator_precedence);
                 left = ASTExpression::binary(operator, left, right);
             } else {
                 break;
             }
         }
-        Some(left)
+        left
     }
 
     fn parse_binary_operator(&mut self) -> Option<ASTBinaryOperator> {
-        let token = self.current_token()?;
+        let token = self.current_token();
         let kind = match token.kind {
             TokenKind::Plus => Some(ASTBinaryOperatorKind::Plus),
             TokenKind::Minus => Some(ASTBinaryOperatorKind::Minus),

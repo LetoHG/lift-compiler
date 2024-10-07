@@ -1,3 +1,5 @@
+use lexer::TextSpan;
+
 pub mod lexer;
 pub mod parser;
 
@@ -42,6 +44,7 @@ pub trait ASTVisitor {
             ASTExpressionKind::FloatingLiteral(f) => self.visit_float(f),
             ASTExpressionKind::StringLiteral(_) => todo!(),
             ASTExpressionKind::Binary(expr) => self.visit_binary_expression(expr),
+            ASTExpressionKind::Error(span) => self.visit_error(span),
         }
     }
 
@@ -50,6 +53,7 @@ pub trait ASTVisitor {
     fn visit_binary_expression(&mut self, expr: &ASTBinaryExpression);
     fn visit_binary_operator(&mut self, op: &ASTBinaryOperator);
 
+    fn visit_error(&mut self, span: &TextSpan);
     fn visit_integer(&mut self, integer: &i64);
     fn visit_float(&mut self, float: &f64);
 }
@@ -106,6 +110,10 @@ impl ASTVisitor for ASTPrinter {
         ));
     }
 
+    fn visit_error(&mut self, span: &TextSpan) {
+        self.print(&format!("Error: {:?}", span));
+    }
+
     fn visit_integer(&mut self, integer: &i64) {
         self.print(&format!("Integer: {}", integer));
     }
@@ -153,6 +161,7 @@ enum ASTExpressionKind {
     FloatingLiteral(f64),
     StringLiteral(String),
     Binary(ASTBinaryExpression),
+    Error(TextSpan),
 }
 
 pub struct ASTExpression {
@@ -163,6 +172,12 @@ impl ASTExpression {
     fn new(kind: ASTExpressionKind) -> Self {
         Self { kind }
     }
+    fn error(span: TextSpan) -> Self {
+        Self {
+            kind: ASTExpressionKind::Error(span),
+        }
+    }
+
     fn integer(i: i64) -> Self {
         Self {
             kind: ASTExpressionKind::IntegerLiteral(i),
