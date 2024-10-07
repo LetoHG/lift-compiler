@@ -1,6 +1,8 @@
+use core::fmt;
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenKind {
-    Number(i64),
+    Integer(i64),
     Floating(f64),
     Plus,
     Minus,
@@ -13,14 +15,32 @@ pub enum TokenKind {
     Eof,
 }
 
+impl fmt::Display for TokenKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TokenKind::Integer(_) => write!(f, "Integer"),
+            TokenKind::Floating(_) => write!(f, "Floating"),
+            TokenKind::Plus => write!(f, "+"),
+            TokenKind::Minus => write!(f, "-"),
+            TokenKind::Astrisk => write!(f, "*"),
+            TokenKind::Slash => write!(f, "/"),
+            TokenKind::LeftParen => write!(f, "("),
+            TokenKind::RightParen => write!(f, ")"),
+            TokenKind::Whitespace => write!(f, "Whitespace"),
+            TokenKind::Bad => write!(f, "Bad"),
+            TokenKind::Eof => write!(f, "Eof"),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
-pub struct TokenSpan {
+pub struct TextSpan {
     pub(crate) start: usize,
     pub(crate) end: usize,
     pub(crate) literal: String,
 }
 
-impl TokenSpan {
+impl TextSpan {
     fn new(start: usize, end: usize, literal: String) -> Self {
         Self {
             start,
@@ -33,11 +53,11 @@ impl TokenSpan {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Token {
     pub kind: TokenKind,
-    pub(crate) span: TokenSpan,
+    pub(crate) span: TextSpan,
 }
 
 impl Token {
-    fn new(kind: TokenKind, span: TokenSpan) -> Self {
+    fn new(kind: TokenKind, span: TextSpan) -> Self {
         Self { kind, span }
     }
 }
@@ -60,7 +80,7 @@ impl Lexer {
             self.cursor += 1;
             return Some(Token::new(
                 TokenKind::Eof,
-                TokenSpan::new(0, 0, '\0'.to_string()),
+                TextSpan::new(0, 0, '\0'.to_string()),
             ));
         }
 
@@ -80,7 +100,7 @@ impl Lexer {
         let end = self.cursor;
         let literal = self.input[start..end].to_string();
 
-        Some(Token::new(kind, TokenSpan::new(start, end, literal)))
+        Some(Token::new(kind, TextSpan::new(start, end, literal)))
     }
 
     fn is_number_start(c: &char) -> bool {
@@ -136,7 +156,7 @@ impl Lexer {
                 integer_part as f64 + (fractional_part as f64 / divisior_for_fraction as f64),
             );
         } else {
-            return TokenKind::Number(integer_part);
+            return TokenKind::Integer(integer_part);
         }
     }
 

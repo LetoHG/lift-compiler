@@ -1,15 +1,17 @@
 use crate::ast::lexer::{Lexer, Token, TokenKind};
 use crate::ast::{ASTExpression, ASTStatement};
+use crate::diagnostics::DiagnosticsColletionCell;
 
 use super::{ASTBinaryExpression, ASTBinaryOperator, ASTBinaryOperatorKind};
 
 pub struct Parser {
     tokens: Vec<Token>,
     cursor: usize,
+    diagnostics_colletion: DiagnosticsColletionCell,
 }
 
 impl Parser {
-    pub fn new(tokens: Vec<Token>) -> Self {
+    pub fn new(tokens: Vec<Token>, diagnostics_colletion: DiagnosticsColletionCell) -> Self {
         Self {
             tokens: tokens
                 .iter()
@@ -17,10 +19,11 @@ impl Parser {
                 .map(|token| token.clone())
                 .collect(),
             cursor: 0,
+            diagnostics_colletion,
         }
     }
 
-    pub fn from_input(input: String) -> Self {
+    pub fn from_input(input: String, diagnostics_colletion: DiagnosticsColletionCell) -> Self {
         let mut lexer = Lexer::new(input);
         let mut tokens = Vec::new();
         while let Some(token) = lexer.next_token() {
@@ -28,7 +31,11 @@ impl Parser {
                 tokens.push(token);
             }
         }
-        Self { tokens, cursor: 0 }
+        Self {
+            tokens,
+            cursor: 0,
+            diagnostics_colletion,
+        }
     }
 
     pub fn next_statement(&mut self) -> Option<ASTStatement> {
@@ -58,7 +65,7 @@ impl Parser {
     fn parse_primary_expression(&mut self) -> Option<ASTExpression> {
         let token = self.consume()?;
         match token.kind {
-            TokenKind::Number(i) => Some(ASTExpression::integer(i)),
+            TokenKind::Integer(i) => Some(ASTExpression::integer(i)),
             TokenKind::Floating(i) => Some(ASTExpression::float(i)),
             _ => None,
         }

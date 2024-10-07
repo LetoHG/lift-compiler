@@ -49,7 +49,7 @@ impl Upn {
 
         for token in tokens.iter() {
             match token.kind {
-                TokenKind::Number(_) => upn.push_back(token.clone()),
+                TokenKind::Integer(_) => upn.push_back(token.clone()),
                 TokenKind::Floating(_) => upn.push_back(token.clone()),
                 TokenKind::Plus => {
                     Self::unwind_holding_stack(&mut upn, &mut holding_stack, &token.kind);
@@ -102,7 +102,7 @@ impl Upn {
                     let args = Self::get_op_args(&mut solve, 2);
                     solve.push_front(args[1] / args[0]);
                 }
-                TokenKind::Number(i) => solve.push_front(i as f64),
+                TokenKind::Integer(i) => solve.push_front(i as f64),
                 TokenKind::Floating(f) => solve.push_front(f),
                 _ => (),
             }
