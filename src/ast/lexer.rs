@@ -134,8 +134,9 @@ impl Lexer {
         let mut divisior_for_fraction: i64 = 1;
 
         let mut dot_found = false;
-        while let Some(c) = self.consume() {
+        while let c = self.current_char() {
             if c.is_digit(10) {
+                self.consume();
                 if !dot_found {
                     integer_part = integer_part * 10 + c.to_digit(10).unwrap() as i64;
                 } else {
@@ -143,6 +144,7 @@ impl Lexer {
                     divisior_for_fraction *= 10;
                 }
             } else if Self::is_decimal_dot(&c) {
+                self.consume();
                 if dot_found {
                     break;
                 }

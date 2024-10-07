@@ -17,6 +17,8 @@ fn main() {
         tokens.push(token);
     }
 
+    println!("{:?}", tokens);
+
     let diagnostics_colletion: DiagnosticsColletionCell =
         Rc::new(RefCell::new(DiagnosticsColletion::new()));
 

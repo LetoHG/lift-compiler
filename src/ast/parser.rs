@@ -66,12 +66,14 @@ impl Parser {
 
     fn consume(&mut self) -> &Token {
         self.cursor += 1;
+        println!("{:?}", self.peek(-1));
         self.peek(-1)
     }
 
     fn consume_expected(&mut self, expected: TokenKind) -> &Token {
         let token = self.consume();
         if token.kind != expected {
+            println!("VERFLIXT {:?}", token);
             // self.diagnostics_colletion
             //     .borrow_mut()
             //     .report_unexpected_token(&expected, token);
