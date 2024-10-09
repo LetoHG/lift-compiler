@@ -2,8 +2,9 @@ mod ast;
 mod diagnostics;
 
 use ast::lexer::Token;
+use ast::printer::ASTHiglightPrinter;
 use diagnostics::sourcetext::SourceText;
-use diagnostics::DiagnosticsColletionCell;
+use diagnostics::{DiagnosticsColletion, DiagnosticsColletionCell};
 use std::{cell::RefCell, fs, rc::Rc};
 
 fn main() {
@@ -17,22 +18,8 @@ fn main() {
         tokens.push(token);
     }
 
-    println!("{:?}", tokens);
-
     let diagnostics_colletion: DiagnosticsColletionCell =
         Rc::new(RefCell::new(DiagnosticsColletion::new()));
-
-    // let printer = diagnostics::printer::DiagnosticsPrinter::new(&source_text);
-    // println!(
-    //     "printer: {}",
-    //     printer.stringify_diagnostic(
-    //         diagnostics_colletion
-    //             .borrow_mut()
-    //             .diagnostics
-    //             .first()
-    //             .unwrap()
-    //     )
-    // );
 
     let mut ast = ast::Ast::new();
     let mut parser = ast::parser::Parser::new(tokens, Rc::clone(&diagnostics_colletion));
@@ -41,4 +28,8 @@ fn main() {
     }
 
     ast.visualize();
+
+    let mut highlight_printer = ASTHiglightPrinter::new();
+    ast.visit(&mut highlight_printer);
+    highlight_printer.print_result();
 }

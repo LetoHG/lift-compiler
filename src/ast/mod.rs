@@ -1,7 +1,9 @@
 use lexer::TextSpan;
+use termion::color;
 
 pub mod lexer;
 pub mod parser;
+pub mod printer;
 
 pub struct Ast {
     statements: Vec<ASTStatement>,
@@ -44,16 +46,24 @@ pub trait ASTVisitor {
             ASTExpressionKind::FloatingLiteral(f) => self.visit_float(f),
             ASTExpressionKind::StringLiteral(_) => todo!(),
             ASTExpressionKind::Binary(expr) => self.visit_binary_expression(expr),
+            ASTExpressionKind::Parenthesized(expr) => self.visit_parenthesised_expression(expr),
             ASTExpressionKind::Error(span) => self.visit_error(span),
         }
     }
 
-    fn visit_statement(&mut self, statement: &ASTStatement);
-    fn visit_expression(&mut self, expr: &ASTExpression);
+    fn visit_statement(&mut self, statement: &ASTStatement) {
+        self.do_visit_statement(statement);
+    }
+    fn visit_expression(&mut self, expr: &ASTExpression) {
+        self.do_visit_expression(expr);
+    }
+
     fn visit_binary_expression(&mut self, expr: &ASTBinaryExpression);
+    fn visit_parenthesised_expression(&mut self, expr: &ASTParenthesizedExpression);
     fn visit_binary_operator(&mut self, op: &ASTBinaryOperator);
 
-    fn visit_error(&mut self, span: &TextSpan);
+    fn visit_error(&mut self, span: &TextSpan) {}
+
     fn visit_integer(&mut self, integer: &i64);
     fn visit_float(&mut self, float: &f64);
 }
@@ -66,67 +76,102 @@ const INDENATION: usize = 2;
 
 impl ASTVisitor for ASTPrinter {
     fn visit_statement(&mut self, statement: &ASTStatement) {
-        self.print(&format!(
-            "{} Statement:",
-            nerd_font_symbols::md::MD_CODE_BRACES
-        ));
+        self.print(
+            &format!("{}  Statement:", nerd_font_symbols::md::MD_SIGMA),
+            &color::Yellow,
+        );
         self.indentation += INDENATION;
         ASTVisitor::do_visit_statement(self, statement);
         self.indentation -= INDENATION;
     }
 
     fn visit_expression(&mut self, expr: &ASTExpression) {
-        self.print(&format!(
-            "{} Expression:",
-            nerd_font_symbols::md::MD_CODE_PARENTHESES
-        ));
+        self.print(
+            &format!(
+                "{}  Expression:",
+                nerd_font_symbols::md::MD_FUNCTION_VARIANT
+            ),
+            &color::Green,
+        );
         self.indentation += INDENATION;
         ASTVisitor::do_visit_expression(self, &expr);
         self.indentation -= INDENATION;
     }
 
     fn visit_binary_expression(&mut self, expr: &ASTBinaryExpression) {
-        self.print(&format!(
-            "{} Binary:",
-            nerd_font_symbols::md::MD_CALCULATOR_VARIANT_OUTLINE
-        ));
+        self.print(
+            &format!(
+                "{}  Binary: {}{}",
+                nerd_font_symbols::cod::COD_SYMBOL_OPERATOR,
+                color::Fg(color::LightYellow),
+                expr.operator.token.span.literal
+            ),
+            &color::LightBlue,
+        );
         self.indentation += INDENATION;
         // self.print_binary_operator(&expr.operator);
-        self.print(&format!("{:?}", expr.operator.kind));
+        // self.print(&format!("{:?}", expr.operator.kind), &color::White);
         self.visit_expression(&expr.left);
         self.visit_expression(&expr.right);
         self.indentation -= INDENATION;
     }
 
     fn visit_binary_operator(&mut self, op: &ASTBinaryOperator) {
-        self.print(&format!(
-            "Operator: {}",
-            match op.kind {
-                ASTBinaryOperatorKind::Plus => '+',
-                ASTBinaryOperatorKind::Minus => '-',
-                ASTBinaryOperatorKind::Multiply => '*',
-                ASTBinaryOperatorKind::Divide => '/',
-            }
-        ));
+        self.print(
+            &format!(
+                "Operator: {}",
+                match op.kind {
+                    ASTBinaryOperatorKind::Plus => '+',
+                    ASTBinaryOperatorKind::Minus => '-',
+                    ASTBinaryOperatorKind::Multiply => '*',
+                    ASTBinaryOperatorKind::Divide => '/',
+                }
+            ),
+            &color::Yellow,
+        );
+    }
+
+    fn visit_parenthesised_expression(&mut self, expr: &ASTParenthesizedExpression) {
+        self.print(
+            &format!(
+                "{}  Parenthesized:",
+                nerd_font_symbols::md::MD_CODE_PARENTHESES
+            ),
+            &color::Magenta,
+        );
+        self.indentation += INDENATION;
+        ASTVisitor::do_visit_expression(self, &expr.expr);
     }
 
     fn visit_error(&mut self, span: &TextSpan) {
-        self.print(&format!("Error: {:?}", span));
+        self.print(&format!("Error: {:?}", span), &color::Red);
     }
 
     fn visit_integer(&mut self, integer: &i64) {
-        self.print(&format!("Integer: {}", integer));
+        self.print(
+            &format!("Integer: {}{}", color::Fg(color::Blue), integer),
+            &color::White,
+        );
     }
 
     fn visit_float(&mut self, float: &f64) {
-        self.print(&format!("Float: {}", float));
+        self.print(
+            &format!("Float: {}{}", color::Fg(color::Blue), float),
+            &color::White,
+        );
     }
 }
 
 impl ASTPrinter {
-    fn print(&self, text: &str) {
+    fn print(&self, text: &str, text_color: &dyn color::Color) {
         // println!("{}├─ {}", "│ ".repeat(self.indentation), text);
-        println!("{}└─ {}", " ".repeat(self.indentation), text);
+        println!(
+            "{}└─ {}{}{}",
+            " ".repeat(self.indentation),
+            color::Fg(text_color),
+            text,
+            color::Fg(color::Reset)
+        );
     }
 }
 
@@ -155,6 +200,7 @@ enum ASTExpressionKind {
     FloatingLiteral(f64),
     StringLiteral(String),
     Binary(ASTBinaryExpression),
+    Parenthesized(ASTParenthesizedExpression),
     Error(TextSpan),
 }
 
@@ -192,6 +238,14 @@ impl ASTExpression {
             }),
         }
     }
+
+    fn parenthesized(expr: ASTExpression) -> Self {
+        Self {
+            kind: ASTExpressionKind::Parenthesized(ASTParenthesizedExpression {
+                expr: Box::new(expr),
+            }),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -223,4 +277,8 @@ pub struct ASTBinaryExpression {
     operator: ASTBinaryOperator,
     left: Box<ASTExpression>,
     right: Box<ASTExpression>,
+}
+
+pub struct ASTParenthesizedExpression {
+    expr: Box<ASTExpression>,
 }

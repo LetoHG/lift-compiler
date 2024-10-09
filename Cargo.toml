@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 nerd-font-symbols = "0.2"
+termion = "4.0.3"

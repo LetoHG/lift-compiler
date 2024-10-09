@@ -93,7 +93,6 @@ impl Parser {
 
     fn consume(&self) -> &Token {
         self.cursor.move_forward();
-        println!("{:?}", self.peek(-1));
         self.peek(-1)
     }
 
@@ -121,7 +120,7 @@ impl Parser {
                 let expr = self.parse_binary_expression(0);
                 let found_token = self.consume_expected(TokenKind::RightParen);
                 // return ASTExpression::error(found_token.span.clone());
-                expr
+                ASTExpression::parenthesized(expr)
             }
             _ => {
                 self.diagnostics_colletion
