@@ -1,26 +1,53 @@
-use std::borrow::BorrowMut;
-
 use crate::ast::lexer::{Lexer, Token, TokenKind};
 use crate::ast::{ASTExpression, ASTStatement};
+use crate::diagnostics::DiagnosticsColletion;
 use crate::diagnostics::DiagnosticsColletionCell;
+use std::{
+    cell::{Cell, RefCell},
+    rc::Rc,
+};
 
 use super::{ASTBinaryExpression, ASTBinaryOperator, ASTBinaryOperatorKind};
 
+struct Cursor {
+    cursor: Cell<usize>,
+}
+
+impl Cursor {
+    fn new() -> Self {
+        Self {
+            cursor: Cell::new(0),
+        }
+    }
+
+    fn move_forward(&self) {
+        let value = self.cursor.get();
+        self.cursor.set(value + 1);
+    }
+
+    fn get_value(&self) -> usize {
+        self.cursor.get()
+    }
+}
+
 pub struct Parser {
     tokens: Vec<Token>,
-    cursor: usize,
+    cursor: Cursor,
     diagnostics_colletion: DiagnosticsColletionCell,
 }
 
 impl Parser {
-    pub fn new(tokens: Vec<Token>, diagnostics_colletion: DiagnosticsColletionCell) -> Self {
+    pub fn new(
+        tokens: Vec<Token>,
+        diagnostics_colletion: Rc<RefCell<DiagnosticsColletion>>,
+    ) -> Self {
         Self {
             tokens: tokens
                 .iter()
                 .filter(|token| token.kind != TokenKind::Whitespace)
                 .map(|token| token.clone())
                 .collect(),
-            cursor: 0,
+            cursor: Cursor::new(),
             diagnostics_colletion,
         }
     }
@@ -35,7 +62,7 @@ impl Parser {
         }
         Self {
             tokens,
-            cursor: 0,
+            cursor: Cursor::new(),
             diagnostics_colletion,
         }
     }
@@ -58,25 +85,25 @@ impl Parser {
 
     fn peek(&self, offset: isize) -> &Token {
         let index = std::cmp::min(
-            (self.cursor as isize + offset) as usize,
+            (self.cursor.get_value() as isize + offset) as usize,
             self.tokens.len() - 1,
         );
         self.tokens.get(index).unwrap()
     }
 
-    fn consume(&mut self) -> &Token {
-        self.cursor += 1;
+    fn consume(&self) -> &Token {
+        self.cursor.move_forward();
         println!("{:?}", self.peek(-1));
         self.peek(-1)
     }
 
-    fn consume_expected(&mut self, expected: TokenKind) -> &Token {
+    fn consume_expected(&self, expected: TokenKind) -> &Token {
         let token = self.consume();
         if token.kind != expected {
             println!("VERFLIXT {:?}", token);
-            // self.diagnostics_colletion
-            //     .borrow_mut()
-            //     .report_unexpected_token(&expected, token);
+            self.diagnostics_colletion
+                .borrow_mut()
+                .report_unexpected_token(&expected, token);
         }
         token
     }
@@ -87,7 +114,7 @@ impl Parser {
 
     fn parse_primary_expression(&mut self) -> ASTExpression {
         let token = self.consume();
-        match token.kind {
+        return match token.kind {
             TokenKind::Integer(i) => ASTExpression::integer(i),
             TokenKind::Floating(i) => ASTExpression::float(i),
             TokenKind::LeftParen => {
@@ -97,12 +124,12 @@ impl Parser {
                 expr
             }
             _ => {
-                // self.diagnostics_colletion
-                //     .get_mut()
-                //     .report_expected_expression(token);
+                self.diagnostics_colletion
+                    .borrow_mut()
+                    .report_expected_expression(token);
                 ASTExpression::error(token.span.clone())
             }
-        }
+        };
     }
 
     fn parse_binary_expression(&mut self, precedence: u8) -> ASTExpression {

@@ -1,9 +1,9 @@
 mod ast;
 mod diagnostics;
 
-use ast::lexer::{TextSpan, Token, TokenKind};
+use ast::lexer::Token;
 use diagnostics::sourcetext::SourceText;
-use diagnostics::{DiagnosticsColletion, DiagnosticsColletionCell};
+use diagnostics::DiagnosticsColletionCell;
 use std::{cell::RefCell, fs, rc::Rc};
 
 fn main() {
@@ -35,7 +35,7 @@ fn main() {
     // );
 
     let mut ast = ast::Ast::new();
-    let mut parser = ast::parser::Parser::new(tokens, diagnostics_colletion);
+    let mut parser = ast::parser::Parser::new(tokens, Rc::clone(&diagnostics_colletion));
     while let Some(statement) = parser.next_statement() {
         ast.add_statement(statement);
     }

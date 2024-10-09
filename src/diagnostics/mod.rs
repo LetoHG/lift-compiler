@@ -1,9 +1,9 @@
-use std::{cell::RefCell, rc::Rc};
-
-use crate::ast::lexer::{Token, TokenKind};
-
 pub mod printer;
 pub mod sourcetext;
+
+use crate::ast::lexer::{TextSpan, Token, TokenKind};
+use std::{cell::RefCell, rc::Rc};
+
 pub enum DiagnosticKind {
     Error,
     Warning,
@@ -12,15 +12,15 @@ pub enum DiagnosticKind {
 pub struct Diagnostic {
     pub(crate) message: String,
     pub(crate) kind: DiagnosticKind,
-    pub(crate) token: Token,
+    pub(crate) span: TextSpan,
 }
 
 impl Diagnostic {
-    pub fn new(message: String, kind: DiagnosticKind, token: Token) -> Self {
+    pub fn new(message: String, kind: DiagnosticKind, span: TextSpan) -> Self {
         Self {
             message,
             kind,
-            token,
+            span,
         }
     }
 }
@@ -38,20 +38,14 @@ impl DiagnosticsColletion {
         }
     }
 
-    pub fn report_error(&mut self, message: String, token: &Token) {
-        self.diagnostics.push(Diagnostic::new(
-            message,
-            DiagnosticKind::Error,
-            token.clone(),
-        ));
+    pub fn report_error(&mut self, message: String, span: TextSpan) {
+        self.diagnostics
+            .push(Diagnostic::new(message, DiagnosticKind::Error, span));
     }
 
-    pub fn report_warning(&mut self, message: String, token: &Token) {
-        self.diagnostics.push(Diagnostic::new(
-            message,
-            DiagnosticKind::Warning,
-            token.clone(),
-        ));
+    pub fn report_warning(&mut self, message: String, span: TextSpan) {
+        self.diagnostics
+            .push(Diagnostic::new(message, DiagnosticKind::Warning, span));
     }
 
     pub fn report_unexpected_token(&mut self, expected_tokenkind: &TokenKind, found_token: &Token) {
@@ -60,13 +54,13 @@ impl DiagnosticsColletion {
                 "Expected <{}>, but found <{}>",
                 expected_tokenkind, found_token.kind
             ),
-            found_token,
+            found_token.span.clone(),
         );
     }
     pub fn report_expected_expression(&mut self, found_token: &Token) {
         self.report_error(
             format!("Expected expression, but found <{}>", found_token.kind),
-            found_token,
+            found_token.span.clone(),
         );
     }
 }

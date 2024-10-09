@@ -125,14 +125,8 @@ impl ASTVisitor for ASTPrinter {
 
 impl ASTPrinter {
     fn print(&self, text: &str) {
-        // "└──"
-        // "├──"
         // println!("{}├─ {}", "│ ".repeat(self.indentation), text);
         println!("{}└─ {}", " ".repeat(self.indentation), text);
-        // if self.indentation == 0 {
-        //     println!("├─ {}", text);
-        // } else {
-        // }
     }
 }
 

@@ -23,7 +23,7 @@ impl<'a> DiagnosticsPrinter<'a> {
     //
     //
     pub fn stringify_diagnostic(&self, diagnostic: &Diagnostic) -> String {
-        let (line, col) = self.source_text.get_location(diagnostic.token.span.start);
+        let (line, col) = self.source_text.get_location(diagnostic.span.start);
         let whitespace = " ".repeat(col);
         format!(
             "{line}{whitespace}^\n{whitespace}│\n{whitespace}└─{}",
