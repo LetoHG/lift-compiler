@@ -3,6 +3,7 @@ mod diagnostics;
 
 use ast::lexer::Token;
 use ast::printer::ASTHiglightPrinter;
+use ast::solver::ASTSolver;
 use diagnostics::sourcetext::SourceText;
 use diagnostics::{DiagnosticsColletion, DiagnosticsColletionCell};
 use std::{cell::RefCell, fs, rc::Rc};
@@ -32,4 +33,8 @@ fn main() {
     let mut highlight_printer = ASTHiglightPrinter::new();
     ast.visit(&mut highlight_printer);
     highlight_printer.print_result();
+
+    let mut solver = ASTSolver::new();
+    ast.visit(&mut solver);
+    solver.print_result();
 }

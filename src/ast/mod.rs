@@ -4,6 +4,7 @@ use termion::color;
 pub mod lexer;
 pub mod parser;
 pub mod printer;
+pub mod solver;
 
 pub struct Ast {
     statements: Vec<ASTStatement>,

@@ -135,10 +135,9 @@ impl Parser {
         let mut left = self.parse_primary_expression();
 
         while let Some(operator) = self.parse_binary_operator() {
-            self.consume();
-
             let operator_precedence = operator.precedence();
             if operator_precedence >= precedence {
+                self.consume();
                 let right = self.parse_binary_expression(operator_precedence);
                 left = ASTExpression::binary(operator, left, right);
             } else {

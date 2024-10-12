@@ -1,7 +1,7 @@
 use super::{ASTBinaryOperator, ASTBinaryOperatorKind, ASTVisitor};
 
-use termion::color;
 use termion::color::Fg;
+use termion::color::{self, White};
 pub struct ASTHiglightPrinter {
     indent: usize,
     result: String,
@@ -20,7 +20,7 @@ impl ASTHiglightPrinter {
     }
 
     pub fn print_result(&self) {
-        print!("{}", self.result);
+        println!("Highlighted Source:\n{}{}", self.result, Fg(White));
     }
 
     fn add_whitespace(&mut self) {
