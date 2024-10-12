@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::{ASTBinaryOperator, ASTBinaryOperatorKind, ASTVisitor};
+use super::{ASTBinaryOperator, ASTBinaryOperatorKind, ASTReturnStatement, ASTVisitor};
 
 use termion::color;
 use termion::color::Fg;
@@ -23,6 +23,9 @@ impl ASTSolver {
 }
 
 impl ASTVisitor for ASTSolver {
+    fn visit_return_statement(&mut self, statement: &ASTReturnStatement) {
+        self.visit_expression(&statement.expr);
+    }
     fn visit_let_statement(&mut self, statement: &super::ASTLetStatement) {
         self.visit_expression(&statement.initializer);
         self.variables.insert(

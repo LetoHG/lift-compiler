@@ -1,4 +1,6 @@
-use super::{ASTBinaryOperator, ASTBinaryOperatorKind, ASTLetStatement, ASTVisitor};
+use super::{
+    ASTBinaryOperator, ASTBinaryOperatorKind, ASTLetStatement, ASTReturnStatement, ASTVisitor,
+};
 
 use termion::color::Fg;
 use termion::color::{self, White};
@@ -41,6 +43,13 @@ impl ASTHiglightPrinter {
 }
 
 impl ASTVisitor for ASTHiglightPrinter {
+    fn visit_return_statement(&mut self, statement: &ASTReturnStatement) {
+        self.result
+            .push_str(&format!("{}return", Fg(Self::LET_COLOR)));
+        self.add_whitespace();
+        self.visit_expression(&statement.expr);
+    }
+
     fn visit_let_statement(&mut self, statement: &ASTLetStatement) {
         self.result.push_str(&format!("{}let", Fg(Self::LET_COLOR)));
         self.add_whitespace();

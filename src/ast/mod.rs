@@ -39,6 +39,7 @@ pub trait ASTVisitor {
     fn do_visit_statement(&mut self, statement: &ASTStatement) {
         match &statement.kind {
             ASTStatementKind::Expression(expr) => self.visit_expression(expr),
+            ASTStatementKind::ReturnStatement(statement) => self.visit_return_statement(statement),
             ASTStatementKind::LetStatement(statement) => self.visit_let_statement(statement),
         }
     }
@@ -59,6 +60,7 @@ pub trait ASTVisitor {
     fn visit_statement(&mut self, statement: &ASTStatement) {
         self.do_visit_statement(statement);
     }
+    fn visit_return_statement(&mut self, statement: &ASTReturnStatement);
     fn visit_let_statement(&mut self, statement: &ASTLetStatement);
 
     fn visit_function_call_expression(&mut self, expr: &ASTFunctionCallExpression);
@@ -129,6 +131,15 @@ impl ASTVisitor for ASTPrinter {
         self.decrease_indentation();
     }
 
+    fn visit_return_statement(&mut self, statement: &ASTReturnStatement) {
+        self.print(
+            &format!("{}  Return:", Self::LET_STATEMENT_ICON),
+            &Self::LET_STATEMENT_COLOR,
+        );
+        self.increase_indentation();
+        ASTVisitor::do_visit_expression(self, &statement.expr);
+        self.decrease_indentation();
+    }
     fn visit_let_statement(&mut self, statement: &ASTLetStatement) {
         self.print(
             &format!(
@@ -238,11 +249,16 @@ impl ASTVisitor for ASTPrinter {
 enum ASTStatementKind {
     Expression(ASTExpression),
     LetStatement(ASTLetStatement),
+    ReturnStatement(ASTReturnStatement),
 }
 
 pub struct ASTLetStatement {
     identifier: Token,
     initializer: ASTExpression,
+}
+
+pub struct ASTReturnStatement {
+    expr: ASTExpression,
 }
 
 pub struct ASTStatement {
@@ -260,6 +276,11 @@ impl ASTStatement {
         }
     }
 
+    fn return_statement(expr: ASTExpression) -> Self {
+        Self {
+            kind: ASTStatementKind::ReturnStatement(ASTReturnStatement { expr }),
+        }
+    }
     fn let_statement(identifier: Token, initializer: ASTExpression) -> Self {
         Self {
             kind: ASTStatementKind::LetStatement(ASTLetStatement {

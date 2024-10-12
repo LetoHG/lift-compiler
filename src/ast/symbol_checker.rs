@@ -17,6 +17,10 @@ impl SymbolChecker {
 }
 
 impl ASTVisitor for SymbolChecker {
+    fn visit_return_statement(&mut self, statement: &super::ASTReturnStatement) {
+        self.visit_expression(&statement.expr);
+    }
+
     fn visit_let_statement(&mut self, statement: &super::ASTLetStatement) {
         self.symbols.push(statement.identifier.span.literal.clone());
         self.visit_expression(&statement.initializer);

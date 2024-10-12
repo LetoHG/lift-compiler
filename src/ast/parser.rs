@@ -83,6 +83,7 @@ impl Parser {
     fn parse_statement(&mut self) -> ASTStatement {
         match self.current_token().kind {
             TokenKind::Let => self.parse_let_statement(),
+            TokenKind::Return => self.parse_return_statement(),
             _ => self.parse_expression_statement(),
         }
     }
@@ -114,6 +115,11 @@ impl Parser {
         token
     }
 
+    fn parse_return_statement(&mut self) -> ASTStatement {
+        self.consume_expected(TokenKind::Return);
+        let expr = self.parse_expression();
+        ASTStatement::return_statement(expr)
+    }
     fn parse_let_statement(&mut self) -> ASTStatement {
         self.consume_expected(TokenKind::Let);
         let identifier = self.consume_expected(TokenKind::Identifier).clone();
