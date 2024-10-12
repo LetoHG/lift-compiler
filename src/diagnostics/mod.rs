@@ -38,6 +38,10 @@ impl DiagnosticsColletion {
         }
     }
 
+    pub fn clear(&mut self) {
+        self.diagnostics.clear();
+    }
+
     pub fn report_error(&mut self, message: String, span: TextSpan) {
         self.diagnostics
             .push(Diagnostic::new(message, DiagnosticKind::Error, span));

@@ -51,6 +51,7 @@ pub trait ASTVisitor {
             ASTExpressionKind::StringLiteral(_) => todo!(),
             ASTExpressionKind::Binary(expr) => self.visit_binary_expression(expr),
             ASTExpressionKind::Parenthesized(expr) => self.visit_parenthesised_expression(expr),
+            ASTExpressionKind::FunctionCall(expr) => self.visit_function_call_expression(expr),
             ASTExpressionKind::Error(span) => self.visit_error(span),
         }
     }
@@ -59,6 +60,8 @@ pub trait ASTVisitor {
         self.do_visit_statement(statement);
     }
     fn visit_let_statement(&mut self, statement: &ASTLetStatement);
+
+    fn visit_function_call_expression(&mut self, expr: &ASTFunctionCallExpression);
 
     fn visit_expression(&mut self, expr: &ASTExpression) {
         self.do_visit_expression(expr);
@@ -91,6 +94,7 @@ impl ASTPrinter {
 
     const STATEMENT_ICON: &str = nerd_font_symbols::md::MD_SIGMA;
     const LET_STATEMENT_ICON: &str = nerd_font_symbols::md::MD_EQUAL;
+    const FUNC_CALL_STATEMENT_ICON: &str = nerd_font_symbols::md::MD_FUNCTION;
     const EXPR_ICON: &str = nerd_font_symbols::md::MD_FUNCTION_VARIANT;
     const BIN_EXPR_ICON: &str = nerd_font_symbols::cod::COD_SYMBOL_OPERATOR;
     const VARIABLE_ICON: &str = nerd_font_symbols::md::MD_VARIABLE;
@@ -137,6 +141,23 @@ impl ASTVisitor for ASTPrinter {
         );
         self.increase_indentation();
         ASTVisitor::do_visit_expression(self, &statement.initializer);
+        self.decrease_indentation();
+    }
+
+    fn visit_function_call_expression(&mut self, expr: &ASTFunctionCallExpression) {
+        self.print(
+            &format!(
+                "{}  FunctionCall: {}{}",
+                Self::FUNC_CALL_STATEMENT_ICON,
+                color::Fg(Self::TEXT_COLOR),
+                &expr.identifier.span.literal
+            ),
+            &Self::TEXT_COLOR,
+        );
+        self.increase_indentation();
+        for expr in expr.arguments.iter() {
+            ASTVisitor::do_visit_expression(self, &expr);
+        }
         self.decrease_indentation();
     }
 
@@ -256,6 +277,7 @@ enum ASTExpressionKind {
     Binary(ASTBinaryExpression),
     Parenthesized(ASTParenthesizedExpression),
     Variable(ASTVariableExpression),
+    FunctionCall(ASTFunctionCallExpression),
     Error(TextSpan),
 }
 
@@ -307,6 +329,15 @@ impl ASTExpression {
             }),
         }
     }
+
+    fn function_call(identifier: Token, arguments: Vec<ASTExpression>) -> Self {
+        Self {
+            kind: ASTExpressionKind::FunctionCall(ASTFunctionCallExpression {
+                identifier,
+                arguments,
+            }),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -349,6 +380,17 @@ pub struct ASTVariableExpression {
 }
 
 impl ASTVariableExpression {
+    pub fn identifier(&self) -> &str {
+        &self.identifier.span.literal
+    }
+}
+
+pub struct ASTFunctionCallExpression {
+    identifier: Token,
+    arguments: Vec<ASTExpression>,
+}
+
+impl ASTFunctionCallExpression {
     pub fn identifier(&self) -> &str {
         &self.identifier.span.literal
     }

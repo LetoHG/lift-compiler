@@ -2,12 +2,16 @@ use crate::ast::lexer::{Lexer, Token, TokenKind};
 use crate::ast::{ASTExpression, ASTStatement};
 use crate::diagnostics::DiagnosticsColletion;
 use crate::diagnostics::DiagnosticsColletionCell;
+use std::fmt::Arguments;
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
 };
 
-use super::{ASTBinaryExpression, ASTBinaryOperator, ASTBinaryOperatorKind};
+use super::{
+    ASTBinaryExpression, ASTBinaryOperator, ASTBinaryOperatorKind, ASTExpressionKind,
+    ASTFunctionCallExpression,
+};
 
 struct Cursor {
     cursor: Cell<usize>,
@@ -103,7 +107,6 @@ impl Parser {
     fn consume_expected(&self, expected: TokenKind) -> &Token {
         let token = self.consume();
         if token.kind != expected {
-            println!("VERFLIXT {:?}", token);
             self.diagnostics_colletion
                 .borrow_mut()
                 .report_unexpected_token(&expected, token);
@@ -128,16 +131,54 @@ impl Parser {
         self.parse_binary_expression(0)
     }
 
+    fn parse_function_call_expression(&mut self) -> ASTExpression {
+        let identifier = self.peek(-1).clone();
+        self.consume();
+        if self.current_token().kind == TokenKind::Comma {
+            self.diagnostics_colletion
+                .borrow_mut()
+                .report_unexpected_token(&TokenKind::Identifier, self.peek(1));
+            self.consume();
+        }
+
+        let mut arguments: Vec<ASTExpression> = Vec::new();
+        while self.current_token().kind != TokenKind::RightParen {
+            if self.current_token().kind == TokenKind::Comma {
+                self.diagnostics_colletion
+                    .borrow_mut()
+                    .report_unexpected_token(&TokenKind::Identifier, self.current_token());
+                self.consume();
+            }
+            arguments.push(self.parse_expression());
+            if self.current_token().kind == TokenKind::Comma
+                && self.peek(1).kind == TokenKind::RightParen
+            {
+                self.consume_expected(TokenKind::RightParen);
+                break;
+            } else if self.current_token().kind == TokenKind::Comma {
+                println!("{:?}", self.consume()); // Consume comma if present
+            }
+        }
+        self.consume_expected(TokenKind::RightParen);
+        ASTExpression::function_call(identifier.clone(), arguments)
+    }
+
     fn parse_primary_expression(&mut self) -> ASTExpression {
         let token = self.consume();
         return match token.kind {
             TokenKind::Integer(i) => ASTExpression::integer(i),
             TokenKind::Floating(i) => ASTExpression::float(i),
-            TokenKind::Identifier => ASTExpression::identifier(token.clone()),
+            TokenKind::Identifier => {
+                if self.current_token().kind == TokenKind::LeftParen {
+                    self.parse_function_call_expression()
+                } else {
+                    ASTExpression::identifier(token.clone())
+                }
+            }
+
             TokenKind::LeftParen => {
                 let expr = self.parse_binary_expression(0);
                 let found_token = self.consume_expected(TokenKind::RightParen);
-                // return ASTExpression::error(found_token.span.clone());
                 ASTExpression::parenthesized(expr)
             }
             _ => {

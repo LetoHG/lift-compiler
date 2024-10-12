@@ -15,6 +15,8 @@ fn main() {
 let aligator = 10;
 let elephant = 2.15;
 let b = 7 - elepant + aligator;
+let d = f(aligator, b, elephant,);
+let faulty_call = f(b ,, b, elephant,);
 let crocodile = aligator + 3.1415 / (2 * b);
     ";
 
@@ -47,8 +49,13 @@ let crocodile = aligator + 3.1415 / (2 * b);
     ast.visit(&mut highlight_printer);
     highlight_printer.print_result();
 
+    println!("Synatx Errors:");
+    print_diagstics(&source_text, &diagnostics_colletion);
+    diagnostics_colletion.borrow_mut().clear();
+
     let mut symbol_checker = symbol_checker::SymbolChecker::new(Rc::clone(&diagnostics_colletion));
     ast.visit(&mut symbol_checker);
+    println!("Indentifier Errors:");
     print_diagstics(&source_text, &diagnostics_colletion);
 
     if diagnostics_colletion.borrow().diagnostics.len() > 0 {

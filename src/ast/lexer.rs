@@ -6,6 +6,7 @@ pub enum TokenKind {
     Floating(f64),
     Identifier,
     Let,
+    Func,
     Plus,
     Minus,
     Astrisk,
@@ -13,6 +14,7 @@ pub enum TokenKind {
     Equal,
     LeftParen,
     RightParen,
+    Comma,
     SemiColon,
     Whitespace,
     Bad,
@@ -26,6 +28,7 @@ impl fmt::Display for TokenKind {
             TokenKind::Floating(_) => write!(f, "Floating"),
             TokenKind::Identifier => write!(f, "Identifier"),
             TokenKind::Let => write!(f, "Let"),
+            TokenKind::Func => write!(f, "Func"),
             TokenKind::Plus => write!(f, "+"),
             TokenKind::Minus => write!(f, "-"),
             TokenKind::Astrisk => write!(f, "*"),
@@ -33,6 +36,7 @@ impl fmt::Display for TokenKind {
             TokenKind::Equal => write!(f, "="),
             TokenKind::LeftParen => write!(f, "("),
             TokenKind::RightParen => write!(f, ")"),
+            TokenKind::Comma => write!(f, ","),
             TokenKind::SemiColon => write!(f, ";"),
             TokenKind::Whitespace => write!(f, "Whitespace"),
             TokenKind::Bad => write!(f, "Bad"),
@@ -102,6 +106,7 @@ impl Lexer {
             let identifier = self.consume_identifier();
             kind = match identifier.as_str() {
                 "let" => TokenKind::Let,
+                "func" => TokenKind::Func,
                 _ => TokenKind::Identifier,
             };
         } else if Self::is_whitespace(&c) {
@@ -186,7 +191,7 @@ impl Lexer {
         let mut identifier = String::new();
         loop {
             let c = self.current_char();
-            if c.is_alphanumeric() {
+            if c.is_alphanumeric() || c == '_' {
                 identifier.push(c);
                 self.consume();
             } else {
@@ -204,6 +209,7 @@ impl Lexer {
             '=' => TokenKind::Equal,
             '(' => TokenKind::LeftParen,
             ')' => TokenKind::RightParen,
+            ',' => TokenKind::Comma,
             ';' => TokenKind::SemiColon,
             _ => TokenKind::Bad,
         }

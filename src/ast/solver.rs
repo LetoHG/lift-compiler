@@ -30,6 +30,11 @@ impl ASTVisitor for ASTSolver {
             self.result.unwrap(),
         );
     }
+
+    fn visit_function_call_expression(&mut self, expr: &super::ASTFunctionCallExpression) {
+        todo!();
+    }
+
     fn visit_variable_expression(&mut self, expr: &super::ASTVariableExpression) {
         self.result = Some(*self.variables.get(expr.identifier()).unwrap());
     }

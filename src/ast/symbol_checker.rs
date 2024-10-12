@@ -22,6 +22,17 @@ impl ASTVisitor for SymbolChecker {
         self.visit_expression(&statement.initializer);
     }
 
+    fn visit_function_call_expression(&mut self, expr: &super::ASTFunctionCallExpression) {
+        if !self.symbols.contains(&expr.identifier().to_string()) {
+            self.diagnostics
+                .borrow_mut()
+                .report_undefined_variable(expr.identifier.span.clone());
+        }
+        for arg in expr.arguments.iter() {
+            self.visit_expression(arg);
+        }
+    }
+
     fn visit_variable_expression(&mut self, expr: &super::ASTVariableExpression) {
         if !self.symbols.contains(&expr.identifier().to_string()) {
             self.diagnostics

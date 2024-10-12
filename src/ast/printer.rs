@@ -12,6 +12,7 @@ impl ASTHiglightPrinter {
     const FLOAT_COLOR: color::Cyan = color::Cyan;
     const TEXT_COLOR: color::White = color::White;
     const LET_COLOR: color::Red = color::Red;
+    const FUNC_COLOR: color::Yellow = color::Yellow;
     const VARIABLE_COLOR: color::LightGreen = color::LightGreen;
 
     pub fn new() -> Self {
@@ -49,6 +50,25 @@ impl ASTVisitor for ASTHiglightPrinter {
         self.add_whitespace();
         self.visit_expression(&statement.initializer);
         self.add_newline();
+    }
+
+    fn visit_function_call_expression(&mut self, expr: &super::ASTFunctionCallExpression) {
+        self.result.push_str(&format!(
+            "{}{}{}(",
+            Fg(Self::FUNC_COLOR),
+            expr.identifier(),
+            Fg(Self::TEXT_COLOR)
+        ));
+
+        for (i, arg) in expr.arguments.iter().enumerate() {
+            self.visit_expression(arg);
+            if (i + 1) < expr.arguments.len() {
+                self.result.push_str(&format!("{}, ", Fg(Self::TEXT_COLOR)));
+                self.add_whitespace();
+            }
+        }
+        self.result.push_str(&format!("{})", Fg(Self::TEXT_COLOR)));
+        self.add_whitespace();
     }
 
     fn visit_variable_expression(&mut self, expr: &super::ASTVariableExpression) {
