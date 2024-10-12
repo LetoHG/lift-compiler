@@ -1,11 +1,11 @@
 use lexer::{TextSpan, Token};
-use nerd_font_symbols::seti::SETI_AUDIO;
 use termion::color;
 
 pub mod lexer;
 pub mod parser;
 pub mod printer;
 pub mod solver;
+pub mod symbol_checker;
 
 pub struct Ast {
     statements: Vec<ASTStatement>,

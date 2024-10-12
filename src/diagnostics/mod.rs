@@ -63,4 +63,8 @@ impl DiagnosticsColletion {
             found_token.span.clone(),
         );
     }
+
+    pub fn report_undefined_variable(&mut self, span: TextSpan) {
+        self.report_error(format!("Not found in this scope"), span);
+    }
 }

@@ -4,16 +4,18 @@ mod diagnostics;
 use ast::lexer::Token;
 use ast::printer::ASTHiglightPrinter;
 use ast::solver::ASTSolver;
+use ast::symbol_checker;
 use diagnostics::printer::DiagnosticsPrinter;
-use diagnostics::sourcetext::{self, SourceText};
+use diagnostics::sourcetext::SourceText;
 use diagnostics::{DiagnosticsColletion, DiagnosticsColletionCell};
 use std::{cell::RefCell, fs, rc::Rc};
 
 fn main() {
     let input = "
-        let a = 10;
-        let b = 7 + a;
-        let c = a + 3.1415 / (2 * b);
+let aligator = 10;
+let elephant = 2.15;
+let b = 7 - elepant + aligator;
+let crocodile = aligator + 3.1415 / (2 * b);
     ";
 
     // let source_text = SourceText::from_file("math.txt");
@@ -41,11 +43,17 @@ fn main() {
 
     ast.visualize();
 
-    print_diagstics(&source_text, &diagnostics_colletion);
-
     let mut highlight_printer = ASTHiglightPrinter::new();
     ast.visit(&mut highlight_printer);
     highlight_printer.print_result();
+
+    let mut symbol_checker = symbol_checker::SymbolChecker::new(Rc::clone(&diagnostics_colletion));
+    ast.visit(&mut symbol_checker);
+    print_diagstics(&source_text, &diagnostics_colletion);
+
+    if diagnostics_colletion.borrow().diagnostics.len() > 0 {
+        return;
+    }
 
     let mut solver = ASTSolver::new();
     ast.visit(&mut solver);

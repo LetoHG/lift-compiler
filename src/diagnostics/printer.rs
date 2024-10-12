@@ -1,9 +1,7 @@
 use super::sourcetext;
 use super::Diagnostic;
 
-use termion::color::Fg;
-use termion::color::Red;
-use termion::color::Reset;
+use termion::color;
 
 pub struct DiagnosticsPrinter<'a> {
     source_text: &'a sourcetext::SourceText,
@@ -24,20 +22,34 @@ impl<'a> DiagnosticsPrinter<'a> {
         }
     }
 
-    // let x = 5;
-    //     ^
-    //     │
-    //     └─
-    //
-    //
+    // let b = 7 - elepant + aligator;
+    //             ^^^^^^^ Not found in this scope
     pub fn stringify_diagnostic(&self, diagnostic: &Diagnostic) -> String {
         let (line, col) = self.source_text.get_location(diagnostic.span.start);
-        let whitespace = " ".repeat(col);
+        let line_number = self.source_text.get_linenumber(diagnostic.span.start) - 1;
+        let symbol_len = diagnostic.span.literal.len();
+        let symbol_end_col = col + diagnostic.span.literal.len();
+        let prefix = line[..col].to_string();
+        let error_symbol = line[col..symbol_end_col].to_string();
+        let suffix = line[symbol_end_col..].to_string();
+
+        let message_color: Box<dyn color::Color> = match diagnostic.kind {
+            super::DiagnosticKind::Error => Box::new(color::Red),
+            super::DiagnosticKind::Warning => Box::new(color::Yellow),
+        };
+
+        let line_number_str = format!("{:2} | ", line_number);
+        let whitespace = " ".repeat(col + line_number_str.len());
+
         format!(
-            "{}{line}{}\n{whitespace}^\n{whitespace}│\n{whitespace}└─{}",
-            Fg(Red),
-            Fg(Reset),
-            diagnostic.message
+            // "{}{line_number_str}{}{prefix}{error_symbol}{suffix}\n{whitespace}{}{}\n{whitespace}|\n{whitespace}+-- {}{}",
+            "{}{line_number_str}{}{prefix}{error_symbol}{suffix}\n{whitespace}{}{} {}{}",
+            color::Fg(color::Blue),
+            color::Fg(color::Reset),
+            color::Fg(message_color.as_ref()),
+            "^".repeat(symbol_len),
+            diagnostic.message,
+            color::Fg(color::Reset)
         )
         .to_string()
     }
