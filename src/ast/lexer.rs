@@ -13,6 +13,7 @@ pub enum TokenKind {
     Equal,
     LeftParen,
     RightParen,
+    SemiColon,
     Whitespace,
     Bad,
     Eof,
@@ -32,6 +33,7 @@ impl fmt::Display for TokenKind {
             TokenKind::Equal => write!(f, "="),
             TokenKind::LeftParen => write!(f, "("),
             TokenKind::RightParen => write!(f, ")"),
+            TokenKind::SemiColon => write!(f, ";"),
             TokenKind::Whitespace => write!(f, "Whitespace"),
             TokenKind::Bad => write!(f, "Bad"),
             TokenKind::Eof => write!(f, "Eof"),
@@ -202,6 +204,7 @@ impl Lexer {
             '=' => TokenKind::Equal,
             '(' => TokenKind::LeftParen,
             ')' => TokenKind::RightParen,
+            ';' => TokenKind::SemiColon,
             _ => TokenKind::Bad,
         }
     }

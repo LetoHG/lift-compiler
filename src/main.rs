@@ -13,7 +13,7 @@ fn main() {
     let input = "
         let a = 10;
         let b = 7 + a;
-        let c = 3.1415 / 2;
+        let c = a + 3.1415 / (2 * b);
     "
     .to_string();
 

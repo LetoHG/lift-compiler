@@ -9,9 +9,10 @@ pub struct ASTHiglightPrinter {
 
 impl ASTHiglightPrinter {
     const INTEGER_COLOR: color::Cyan = color::Cyan;
-    const FLOAT_COLOR: color::Green = color::Green;
+    const FLOAT_COLOR: color::Cyan = color::Cyan;
     const TEXT_COLOR: color::White = color::White;
-    const LET_COLOR: color::Blue = color::Blue;
+    const LET_COLOR: color::Red = color::Red;
+    const VARIABLE_COLOR: color::LightGreen = color::LightGreen;
 
     pub fn new() -> Self {
         Self {
@@ -31,20 +32,31 @@ impl ASTHiglightPrinter {
     fn add_newline(&mut self) {
         self.result.push_str("\n");
     }
+
+    fn visit_idenifier(&mut self, identifier: &String) {
+        self.result
+            .push_str(&format!("{}{}", Fg(Self::TEXT_COLOR), identifier));
+    }
 }
 
 impl ASTVisitor for ASTHiglightPrinter {
     fn visit_let_statement(&mut self, statement: &ASTLetStatement) {
         self.result.push_str(&format!("{}let", Fg(Self::LET_COLOR)));
         self.add_whitespace();
-        self.result.push_str(&format!(
-            "{}{} =",
-            Fg(Self::TEXT_COLOR),
-            statement.identifier.span.literal
-        ));
+        self.visit_idenifier(&statement.identifier.span.literal);
+        self.add_whitespace();
+        self.result.push_str(&format!("{}=", Fg(Self::TEXT_COLOR)));
         self.add_whitespace();
         self.visit_expression(&statement.initializer);
         self.add_newline();
+    }
+
+    fn visit_variable_expression(&mut self, expr: &super::ASTVariableExpression) {
+        self.result.push_str(&format!(
+            "{}{}",
+            Fg(Self::VARIABLE_COLOR),
+            expr.identifier()
+        ));
     }
 
     fn visit_binary_expression(&mut self, expr: &super::ASTBinaryExpression) {

@@ -46,6 +46,7 @@ pub trait ASTVisitor {
         match &expr.kind {
             ASTExpressionKind::IntegerLiteral(i) => self.visit_integer(i),
             ASTExpressionKind::FloatingLiteral(f) => self.visit_float(f),
+            ASTExpressionKind::Variable(expr) => self.visit_variable_expression(expr),
             ASTExpressionKind::StringLiteral(_) => todo!(),
             ASTExpressionKind::Binary(expr) => self.visit_binary_expression(expr),
             ASTExpressionKind::Parenthesized(expr) => self.visit_parenthesised_expression(expr),
@@ -62,6 +63,7 @@ pub trait ASTVisitor {
         self.do_visit_expression(expr);
     }
 
+    fn visit_variable_expression(&mut self, expr: &ASTVariableExpression);
     fn visit_binary_expression(&mut self, expr: &ASTBinaryExpression);
     fn visit_parenthesised_expression(&mut self, expr: &ASTParenthesizedExpression);
     fn visit_binary_operator(&mut self, op: &ASTBinaryOperator);
@@ -162,6 +164,9 @@ impl ASTVisitor for ASTPrinter {
         ASTVisitor::do_visit_expression(self, &expr.expr);
     }
 
+    fn visit_variable_expression(&mut self, expr: &ASTVariableExpression) {
+        self.print(&format!("Variable: {}", expr.identifier()), &color::White);
+    }
     fn visit_error(&mut self, span: &TextSpan) {
         self.print(&format!("Error: {:?}", span), &color::Red);
     }
@@ -235,6 +240,7 @@ enum ASTExpressionKind {
     StringLiteral(String),
     Binary(ASTBinaryExpression),
     Parenthesized(ASTParenthesizedExpression),
+    Variable(ASTVariableExpression),
     Error(TextSpan),
 }
 
@@ -260,6 +266,12 @@ impl ASTExpression {
     fn float(f: f64) -> Self {
         Self {
             kind: ASTExpressionKind::FloatingLiteral(f),
+        }
+    }
+
+    fn identifier(token: Token) -> Self {
+        Self {
+            kind: ASTExpressionKind::Variable(ASTVariableExpression { identifier: token }),
         }
     }
 
@@ -315,4 +327,14 @@ pub struct ASTBinaryExpression {
 
 pub struct ASTParenthesizedExpression {
     expr: Box<ASTExpression>,
+}
+
+pub struct ASTVariableExpression {
+    identifier: Token,
+}
+
+impl ASTVariableExpression {
+    pub fn identifier(&self) -> &str {
+        &self.identifier.span.literal
+    }
 }

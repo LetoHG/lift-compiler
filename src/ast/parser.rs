@@ -44,7 +44,9 @@ impl Parser {
         Self {
             tokens: tokens
                 .iter()
-                .filter(|token| token.kind != TokenKind::Whitespace)
+                .filter(|token| {
+                    token.kind != TokenKind::Whitespace && token.kind != TokenKind::SemiColon
+                })
                 .map(|token| token.clone())
                 .collect(),
             cursor: Cursor::new(),
@@ -56,7 +58,7 @@ impl Parser {
         let mut lexer = Lexer::new(input);
         let mut tokens = Vec::new();
         while let Some(token) = lexer.next_token() {
-            if token.kind != TokenKind::Whitespace {
+            if token.kind != TokenKind::Whitespace && token.kind != TokenKind::SemiColon {
                 tokens.push(token);
             }
         }
@@ -131,6 +133,7 @@ impl Parser {
         return match token.kind {
             TokenKind::Integer(i) => ASTExpression::integer(i),
             TokenKind::Floating(i) => ASTExpression::float(i),
+            TokenKind::Identifier => ASTExpression::identifier(token.clone()),
             TokenKind::LeftParen => {
                 let expr = self.parse_binary_expression(0);
                 let found_token = self.consume_expected(TokenKind::RightParen);
