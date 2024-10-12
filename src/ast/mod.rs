@@ -40,6 +40,9 @@ pub trait ASTVisitor {
         match &statement.kind {
             ASTStatementKind::Expression(expr) => self.visit_expression(expr),
             ASTStatementKind::ReturnStatement(statement) => self.visit_return_statement(statement),
+            ASTStatementKind::FunctionStatement(statement) => {
+                self.visit_funtion_statement(statement)
+            }
             ASTStatementKind::LetStatement(statement) => self.visit_let_statement(statement),
         }
     }
@@ -62,6 +65,14 @@ pub trait ASTVisitor {
     }
     fn visit_return_statement(&mut self, statement: &ASTReturnStatement);
     fn visit_let_statement(&mut self, statement: &ASTLetStatement);
+    fn visit_funtion_statement(&mut self, function: &ASTFunctionStatement) {
+        for arg in function.arguments.iter() {
+            self.visit_expression(arg);
+        }
+        for statement in function.body.iter() {
+            self.visit_statement(statement);
+        }
+    }
 
     fn visit_function_call_expression(&mut self, expr: &ASTFunctionCallExpression);
 
@@ -96,6 +107,7 @@ impl ASTPrinter {
 
     const STATEMENT_ICON: &str = nerd_font_symbols::md::MD_SIGMA;
     const LET_STATEMENT_ICON: &str = nerd_font_symbols::md::MD_EQUAL;
+    const FUNC_STATEMENT_ICON: &str = nerd_font_symbols::md::MD_FUNCTION_VARIANT;
     const FUNC_CALL_STATEMENT_ICON: &str = nerd_font_symbols::md::MD_FUNCTION;
     const EXPR_ICON: &str = nerd_font_symbols::md::MD_FUNCTION_VARIANT;
     const BIN_EXPR_ICON: &str = nerd_font_symbols::cod::COD_SYMBOL_OPERATOR;
@@ -152,6 +164,32 @@ impl ASTVisitor for ASTPrinter {
         );
         self.increase_indentation();
         ASTVisitor::do_visit_expression(self, &statement.initializer);
+        self.decrease_indentation();
+    }
+    fn visit_funtion_statement(&mut self, function: &ASTFunctionStatement) {
+        self.print(
+            &format!(
+                "{}  Function: {}{}",
+                Self::FUNC_STATEMENT_ICON,
+                color::Fg(Self::TEXT_COLOR),
+                &function.identifier.span.literal
+            ),
+            &Self::TEXT_COLOR,
+        );
+
+        self.increase_indentation();
+        self.print(&format!("Arguments:"), &Self::TEXT_COLOR);
+        self.increase_indentation();
+        for expr in function.arguments.iter() {
+            ASTVisitor::do_visit_expression(self, &expr);
+        }
+        self.decrease_indentation();
+
+        self.print(&format!("Body:"), &Self::TEXT_COLOR);
+        self.increase_indentation();
+        for statement in function.body.iter() {
+            ASTVisitor::do_visit_statement(self, &statement);
+        }
         self.decrease_indentation();
     }
 
@@ -250,6 +288,7 @@ enum ASTStatementKind {
     Expression(ASTExpression),
     LetStatement(ASTLetStatement),
     ReturnStatement(ASTReturnStatement),
+    FunctionStatement(ASTFunctionStatement),
 }
 
 pub struct ASTLetStatement {
@@ -259,6 +298,11 @@ pub struct ASTLetStatement {
 
 pub struct ASTReturnStatement {
     expr: ASTExpression,
+}
+pub struct ASTFunctionStatement {
+    identifier: Token,
+    arguments: Vec<ASTExpression>,
+    body: Vec<ASTStatement>,
 }
 
 pub struct ASTStatement {
@@ -286,6 +330,16 @@ impl ASTStatement {
             kind: ASTStatementKind::LetStatement(ASTLetStatement {
                 identifier: identifier,
                 initializer,
+            }),
+        }
+    }
+
+    fn function(identifier: Token, arguments: Vec<ASTExpression>, body: Vec<ASTStatement>) -> Self {
+        Self {
+            kind: ASTStatementKind::FunctionStatement(ASTFunctionStatement {
+                identifier: identifier,
+                arguments,
+                body,
             }),
         }
     }

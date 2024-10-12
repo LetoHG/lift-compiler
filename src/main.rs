@@ -13,11 +13,14 @@ use std::{cell::RefCell, fs, rc::Rc};
 fn main() {
     // func a() { return 10; }
     let input = "
-let aligator = 10;
-let elephant = 2.15;
-let b = 7 - elephant + aligator;
-let crocodile = aligator + 3.1415 / (2 * b);
-return 7 - elephant + 10;
+func a() {
+    let aligator = 10;
+    let elephant = 2.15;
+    let b = 7 - elephant + aligator;
+    let crocodile = aligator + 3.1415 / (2 * b);
+    return aligator;
+}
+return a();
 ";
 
     // let source_text = SourceText::from_file("math.txt");

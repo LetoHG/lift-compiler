@@ -84,6 +84,7 @@ impl Parser {
         match self.current_token().kind {
             TokenKind::Let => self.parse_let_statement(),
             TokenKind::Return => self.parse_return_statement(),
+            TokenKind::Func => self.parse_function_statement(),
             _ => self.parse_expression_statement(),
         }
     }
@@ -120,12 +121,28 @@ impl Parser {
         let expr = self.parse_expression();
         ASTStatement::return_statement(expr)
     }
+
     fn parse_let_statement(&mut self) -> ASTStatement {
         self.consume_expected(TokenKind::Let);
         let identifier = self.consume_expected(TokenKind::Identifier).clone();
         self.consume_expected(TokenKind::Equal);
         let expr = self.parse_expression();
         ASTStatement::let_statement(identifier, expr)
+    }
+
+    fn parse_function_statement(&mut self) -> ASTStatement {
+        self.consume_expected(TokenKind::Func);
+        let identifier = self.consume_expected(TokenKind::Identifier).clone();
+        self.consume_expected(TokenKind::LeftParen);
+        let args = self.parse_arguments_list();
+        self.consume_expected(TokenKind::RightParen);
+        self.consume_expected(TokenKind::LeftBrace);
+        let mut body: Vec<ASTStatement> = Vec::new();
+        while self.current_token().kind != TokenKind::RightBrace {
+            body.push(self.parse_statement());
+        }
+        self.consume_expected(TokenKind::RightBrace);
+        ASTStatement::function(identifier, args, body)
     }
 
     fn parse_expression_statement(&mut self) -> ASTStatement {
@@ -137,9 +154,7 @@ impl Parser {
         self.parse_binary_expression(0)
     }
 
-    fn parse_function_call_expression(&mut self) -> ASTExpression {
-        let identifier = self.peek(-1).clone();
-        self.consume();
+    fn parse_arguments_list(&mut self) -> Vec<ASTExpression> {
         if self.current_token().kind == TokenKind::Comma {
             self.diagnostics_colletion
                 .borrow_mut()
@@ -165,6 +180,14 @@ impl Parser {
                 println!("{:?}", self.consume()); // Consume comma if present
             }
         }
+        arguments
+    }
+
+    fn parse_function_call_expression(&mut self) -> ASTExpression {
+        let identifier = self.peek(-1).clone();
+        println!("func: {:?}", self.consume());
+        print!("{:?}", self.current_token());
+        let arguments = self.parse_arguments_list();
         self.consume_expected(TokenKind::RightParen);
         ASTExpression::function_call(identifier.clone(), arguments)
     }

@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-use super::{ASTBinaryOperator, ASTBinaryOperatorKind, ASTReturnStatement, ASTVisitor};
+use super::{
+    ASTBinaryOperator, ASTBinaryOperatorKind, ASTReturnStatement, ASTStatementKind, ASTVisitor,
+};
 
 use termion::color;
 use termion::color::Fg;
@@ -34,9 +36,31 @@ impl ASTVisitor for ASTSolver {
         );
     }
 
-    fn visit_function_call_expression(&mut self, expr: &super::ASTFunctionCallExpression) {
-        todo!();
+    fn visit_funtion_statement(&mut self, function: &super::ASTFunctionStatement) {
+        if function.body.len() == 0 {
+            self.variables
+                .insert(function.identifier.span.literal.clone(), 0.0);
+            return;
+        }
+
+        match function.body.last().unwrap().kind {
+            ASTStatementKind::ReturnStatement(_) => {
+                for statement in function.body.iter() {
+                    self.visit_statement(statement);
+                }
+                self.variables.insert(
+                    function.identifier.span.literal.clone(),
+                    self.result.unwrap(),
+                );
+            }
+            _ => {
+                self.variables
+                    .insert(function.identifier.span.literal.clone(), 0.0);
+            }
+        };
     }
+
+    fn visit_function_call_expression(&mut self, expr: &super::ASTFunctionCallExpression) {}
 
     fn visit_variable_expression(&mut self, expr: &super::ASTVariableExpression) {
         self.result = Some(*self.variables.get(expr.identifier()).unwrap());

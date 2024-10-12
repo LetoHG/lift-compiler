@@ -26,6 +26,12 @@ impl ASTVisitor for SymbolChecker {
         self.visit_expression(&statement.initializer);
     }
 
+    fn visit_funtion_statement(&mut self, function: &super::ASTFunctionStatement) {
+        self.symbols.push(function.identifier.span.literal.clone());
+        for statement in function.body.iter() {
+            self.visit_statement(&statement);
+        }
+    }
     fn visit_function_call_expression(&mut self, expr: &super::ASTFunctionCallExpression) {
         if !self.symbols.contains(&expr.identifier().to_string()) {
             self.diagnostics
