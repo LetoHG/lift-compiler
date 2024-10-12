@@ -195,7 +195,7 @@ impl Parser {
 
         while let Some(operator) = self.parse_binary_operator() {
             let operator_precedence = operator.precedence();
-            if operator_precedence >= precedence {
+            if operator_precedence > precedence {
                 self.consume();
                 let right = self.parse_binary_expression(operator_precedence);
                 left = ASTExpression::binary(operator, left, right);
