@@ -4,10 +4,13 @@ use core::fmt;
 pub enum TokenKind {
     Integer(i64),
     Floating(f64),
+    Identifier,
+    Let,
     Plus,
     Minus,
     Astrisk,
     Slash,
+    Equal,
     LeftParen,
     RightParen,
     Whitespace,
@@ -20,10 +23,13 @@ impl fmt::Display for TokenKind {
         match self {
             TokenKind::Integer(_) => write!(f, "Integer"),
             TokenKind::Floating(_) => write!(f, "Floating"),
+            TokenKind::Identifier => write!(f, "Identifier"),
+            TokenKind::Let => write!(f, "Let"),
             TokenKind::Plus => write!(f, "+"),
             TokenKind::Minus => write!(f, "-"),
             TokenKind::Astrisk => write!(f, "*"),
             TokenKind::Slash => write!(f, "/"),
+            TokenKind::Equal => write!(f, "="),
             TokenKind::LeftParen => write!(f, "("),
             TokenKind::RightParen => write!(f, ")"),
             TokenKind::Whitespace => write!(f, "Whitespace"),
@@ -90,6 +96,12 @@ impl Lexer {
 
         if Self::is_number_start(&c) {
             kind = self.consume_number();
+        } else if Self::is_identifier_start(&c) {
+            let identifier = self.consume_identifier();
+            kind = match identifier.as_str() {
+                "let" => TokenKind::Let,
+                _ => TokenKind::Identifier,
+            };
         } else if Self::is_whitespace(&c) {
             self.consume();
             kind = TokenKind::Whitespace;
@@ -105,6 +117,10 @@ impl Lexer {
 
     fn is_number_start(c: &char) -> bool {
         c.is_digit(10)
+    }
+
+    fn is_identifier_start(c: &char) -> bool {
+        c.is_alphabetic()
     }
 
     fn is_whitespace(c: &char) -> bool {
@@ -134,7 +150,9 @@ impl Lexer {
         let mut divisior_for_fraction: i64 = 1;
 
         let mut dot_found = false;
-        while let c = self.current_char() {
+
+        loop {
+            let c = self.current_char();
             if c.is_digit(10) {
                 self.consume();
                 if !dot_found {
@@ -162,12 +180,26 @@ impl Lexer {
         }
     }
 
+    fn consume_identifier(&mut self) -> String {
+        let mut identifier = String::new();
+        loop {
+            let c = self.current_char();
+            if c.is_alphanumeric() {
+                identifier.push(c);
+                self.consume();
+            } else {
+                return identifier;
+            }
+        }
+    }
+
     fn consume_punctuation(&mut self) -> TokenKind {
         match self.consume().unwrap() {
             '+' => TokenKind::Plus,
             '-' => TokenKind::Minus,
             '*' => TokenKind::Astrisk,
             '/' => TokenKind::Slash,
+            '=' => TokenKind::Equal,
             '(' => TokenKind::LeftParen,
             ')' => TokenKind::RightParen,
             _ => TokenKind::Bad,

@@ -7,16 +7,20 @@ use termion::color::Reset;
 
 pub struct DiagnosticsPrinter<'a> {
     source_text: &'a sourcetext::SourceText,
-    // diagnostics: &'a [Diagnostic],
+    diagnostics: &'a [Diagnostic],
 }
 
 impl<'a> DiagnosticsPrinter<'a> {
-    pub fn new(
-        source_text: &'a sourcetext::SourceText, /* diagnostics: &'a [Diagnostic] */
-    ) -> Self {
+    pub fn new(source_text: &'a sourcetext::SourceText, diagnostics: &'a [Diagnostic]) -> Self {
         Self {
             source_text,
-            // diagnostics,
+            diagnostics,
+        }
+    }
+
+    pub fn print(&self) {
+        for diagnostic in self.diagnostics {
+            println!("{}", self.stringify_diagnostic(diagnostic));
         }
     }
 
@@ -30,7 +34,7 @@ impl<'a> DiagnosticsPrinter<'a> {
         let (line, col) = self.source_text.get_location(diagnostic.span.start);
         let whitespace = " ".repeat(col);
         format!(
-            "{}{line}{}{whitespace}^\n{whitespace}│\n{whitespace}└─{}",
+            "{}{line}{}\n{whitespace}^\n{whitespace}│\n{whitespace}└─{}",
             Fg(Red),
             Fg(Reset),
             diagnostic.message

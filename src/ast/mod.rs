@@ -1,4 +1,4 @@
-use lexer::TextSpan;
+use lexer::{TextSpan, Token};
 use termion::color;
 
 pub mod lexer;
@@ -38,6 +38,7 @@ pub trait ASTVisitor {
     fn do_visit_statement(&mut self, statement: &ASTStatement) {
         match &statement.kind {
             ASTStatementKind::Expression(expr) => self.visit_expression(expr),
+            ASTStatementKind::LetStatement(statement) => self.visit_let_statement(statement),
         }
     }
 
@@ -55,6 +56,8 @@ pub trait ASTVisitor {
     fn visit_statement(&mut self, statement: &ASTStatement) {
         self.do_visit_statement(statement);
     }
+    fn visit_let_statement(&mut self, statement: &ASTLetStatement);
+
     fn visit_expression(&mut self, expr: &ASTExpression) {
         self.do_visit_expression(expr);
     }
@@ -83,6 +86,21 @@ impl ASTVisitor for ASTPrinter {
         );
         self.indentation += INDENATION;
         ASTVisitor::do_visit_statement(self, statement);
+        self.indentation -= INDENATION;
+    }
+
+    fn visit_let_statement(&mut self, statement: &ASTLetStatement) {
+        self.print(
+            &format!(
+                "{}  Declaration: {}{}",
+                nerd_font_symbols::md::MD_EQUAL,
+                color::Fg(color::White),
+                &statement.identifier.span.literal
+            ),
+            &color::Green,
+        );
+        self.indentation += INDENATION;
+        ASTVisitor::do_visit_expression(self, &statement.initializer);
         self.indentation -= INDENATION;
     }
 
@@ -178,6 +196,12 @@ impl ASTPrinter {
 
 enum ASTStatementKind {
     Expression(ASTExpression),
+    LetStatement(ASTLetStatement),
+}
+
+pub struct ASTLetStatement {
+    identifier: Token,
+    initializer: ASTExpression,
 }
 
 pub struct ASTStatement {
@@ -192,6 +216,15 @@ impl ASTStatement {
     fn expression(expr: ASTExpression) -> Self {
         Self {
             kind: ASTStatementKind::Expression(expr),
+        }
+    }
+
+    fn let_statement(identifier: Token, initializer: ASTExpression) -> Self {
+        Self {
+            kind: ASTStatementKind::LetStatement(ASTLetStatement {
+                identifier: identifier,
+                initializer,
+            }),
         }
     }
 }

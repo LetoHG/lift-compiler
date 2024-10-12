@@ -1,4 +1,4 @@
-use super::{ASTBinaryOperator, ASTBinaryOperatorKind, ASTVisitor};
+use super::{ASTBinaryOperator, ASTBinaryOperatorKind, ASTLetStatement, ASTVisitor};
 
 use termion::color::Fg;
 use termion::color::{self, White};
@@ -11,6 +11,7 @@ impl ASTHiglightPrinter {
     const INTEGER_COLOR: color::Cyan = color::Cyan;
     const FLOAT_COLOR: color::Green = color::Green;
     const TEXT_COLOR: color::White = color::White;
+    const LET_COLOR: color::Blue = color::Blue;
 
     pub fn new() -> Self {
         Self {
@@ -33,6 +34,19 @@ impl ASTHiglightPrinter {
 }
 
 impl ASTVisitor for ASTHiglightPrinter {
+    fn visit_let_statement(&mut self, statement: &ASTLetStatement) {
+        self.result.push_str(&format!("{}let", Fg(Self::LET_COLOR)));
+        self.add_whitespace();
+        self.result.push_str(&format!(
+            "{}{} =",
+            Fg(Self::TEXT_COLOR),
+            statement.identifier.span.literal
+        ));
+        self.add_whitespace();
+        self.visit_expression(&statement.initializer);
+        self.add_newline();
+    }
+
     fn visit_binary_expression(&mut self, expr: &super::ASTBinaryExpression) {
         self.visit_expression(&expr.left);
         self.add_whitespace();

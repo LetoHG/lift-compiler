@@ -75,8 +75,10 @@ impl Parser {
     }
 
     fn parse_statement(&mut self) -> ASTStatement {
-        let expr = self.parse_expression();
-        ASTStatement::expression(expr)
+        match self.current_token().kind {
+            TokenKind::Let => self.parse_let_statement(),
+            _ => self.parse_expression_statement(),
+        }
     }
 
     fn current_token(&self) -> &Token {
@@ -105,6 +107,19 @@ impl Parser {
                 .report_unexpected_token(&expected, token);
         }
         token
+    }
+
+    fn parse_let_statement(&mut self) -> ASTStatement {
+        self.consume_expected(TokenKind::Let);
+        let identifier = self.consume_expected(TokenKind::Identifier).clone();
+        self.consume_expected(TokenKind::Equal);
+        let expr = self.parse_expression();
+        ASTStatement::let_statement(identifier, expr)
+    }
+
+    fn parse_expression_statement(&mut self) -> ASTStatement {
+        let expr = self.parse_expression();
+        ASTStatement::expression(expr)
     }
 
     fn parse_expression(&mut self) -> ASTExpression {

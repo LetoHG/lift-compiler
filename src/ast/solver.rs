@@ -17,6 +17,8 @@ impl ASTSolver {
 }
 
 impl ASTVisitor for ASTSolver {
+    fn visit_let_statement(&mut self, statement: &super::ASTLetStatement) {}
+
     fn visit_binary_expression(&mut self, expr: &super::ASTBinaryExpression) {
         self.visit_expression(&expr.left);
         let left = self.result;
