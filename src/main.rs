@@ -14,25 +14,20 @@ fn main() {
         let a = 10;
         let b = 7 + a;
         let c = a + 3.1415 / (2 * b);
-    "
-    .to_string();
+    ";
 
     // let source_text = SourceText::from_file("math.txt");
-    let source_text = SourceText::new(input.clone());
+    let source_text = SourceText::new(input.to_string());
 
     // let content = fs::read_to_string("math.txt").unwrap();
 
     // let mut equation = String::new();
     // std::io::stdin().read_line(&mut equation).unwrap();
 
-    let mut lexer = ast::lexer::Lexer::new(input.clone());
+    let mut lexer = ast::lexer::Lexer::new(input.to_string());
     let mut tokens: Vec<Token> = Vec::new();
     while let Some(token) = lexer.next_token() {
         tokens.push(token);
-    }
-
-    for token in tokens.iter() {
-        println!("{:?}", token);
     }
 
     let diagnostics_colletion: DiagnosticsColletionCell =
