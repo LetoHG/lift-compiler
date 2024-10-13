@@ -91,6 +91,7 @@ pub trait ASTVisitor {
     fn visit_float(&mut self, float: &f64);
 }
 
+#[derive(Clone)]
 enum ASTStatementKind {
     Expression(ASTExpression),
     LetStatement(ASTLetStatement),
@@ -98,20 +99,24 @@ enum ASTStatementKind {
     FunctionStatement(ASTFunctionStatement),
 }
 
+#[derive(Clone)]
 pub struct ASTLetStatement {
     identifier: Token,
     initializer: ASTExpression,
 }
 
+#[derive(Clone)]
 pub struct ASTReturnStatement {
     expr: ASTExpression,
 }
+#[derive(Clone)]
 pub struct ASTFunctionStatement {
     identifier: Token,
     arguments: Vec<ASTExpression>,
     body: Vec<ASTStatement>,
 }
 
+#[derive(Clone)]
 pub struct ASTStatement {
     kind: ASTStatementKind,
 }
@@ -152,6 +157,7 @@ impl ASTStatement {
     }
 }
 
+#[derive(Clone)]
 enum ASTExpressionKind {
     IntegerLiteral(i64),
     FloatingLiteral(f64),
@@ -163,6 +169,7 @@ enum ASTExpressionKind {
     Error(TextSpan),
 }
 
+#[derive(Clone)]
 pub struct ASTExpression {
     kind: ASTExpressionKind,
 }
@@ -222,7 +229,7 @@ impl ASTExpression {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum ASTBinaryOperatorKind {
     Plus,
     Minus,
@@ -230,7 +237,7 @@ enum ASTBinaryOperatorKind {
     Divide,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ASTBinaryOperator {
     kind: ASTBinaryOperatorKind,
     token: lexer::Token,
@@ -247,16 +254,19 @@ impl ASTBinaryOperator {
     }
 }
 
+#[derive(Clone)]
 pub struct ASTBinaryExpression {
     operator: ASTBinaryOperator,
     left: Box<ASTExpression>,
     right: Box<ASTExpression>,
 }
 
+#[derive(Clone)]
 pub struct ASTParenthesizedExpression {
     expr: Box<ASTExpression>,
 }
 
+#[derive(Clone)]
 pub struct ASTVariableExpression {
     identifier: Token,
 }
@@ -267,6 +277,7 @@ impl ASTVariableExpression {
     }
 }
 
+#[derive(Clone)]
 pub struct ASTFunctionCallExpression {
     identifier: Token,
     arguments: Vec<ASTExpression>,

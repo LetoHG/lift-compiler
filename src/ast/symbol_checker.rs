@@ -1,18 +1,51 @@
+use std::collections::HashMap;
+
 use crate::diagnostics::DiagnosticsColletionCell;
 
 use super::ASTVisitor;
 
 pub struct SymbolChecker {
-    symbols: Vec<String>,
+    active_scope: usize,
+    scopes: Vec<Vec<String>>,
+    functions: HashMap<String, Vec<String>>,
     diagnostics: DiagnosticsColletionCell,
 }
 
 impl SymbolChecker {
     pub fn new(diagnostics: DiagnosticsColletionCell) -> Self {
         Self {
-            symbols: Vec::new(),
+            active_scope: 0,
+            scopes: vec![Vec::new()],
+            functions: HashMap::new(),
             diagnostics,
         }
+    }
+
+    fn get_active_scope(&self) -> &Vec<String> {
+        self.scopes.get(self.active_scope).unwrap()
+    }
+
+    fn enter_scope(&mut self, scope_variables: Vec<String>) {
+        self.scopes.push(scope_variables);
+        self.active_scope += 1;
+    }
+
+    fn leave_scope(&mut self) {
+        self.scopes.pop();
+        self.active_scope -= 1;
+    }
+
+    fn add_identifier_to_scope(&mut self, identifier: &String) {
+        self.scopes.last_mut().unwrap().push(identifier.clone());
+    }
+
+    fn check_identifier_in_scope(&self, identifier: &String) -> bool {
+        for scope in self.scopes.iter().rev() {
+            if scope.contains(identifier) {
+                return true;
+            }
+        }
+        return false;
     }
 }
 
@@ -22,29 +55,66 @@ impl ASTVisitor for SymbolChecker {
     }
 
     fn visit_let_statement(&mut self, statement: &super::ASTLetStatement) {
-        self.symbols.push(statement.identifier.span.literal.clone());
+        self.add_identifier_to_scope(&statement.identifier.span.literal);
         self.visit_expression(&statement.initializer);
     }
 
     fn visit_funtion_statement(&mut self, function: &super::ASTFunctionStatement) {
-        self.symbols.push(function.identifier.span.literal.clone());
+        self.add_identifier_to_scope(&function.identifier.span.literal);
+
+        let mut arguments_names: Vec<String> = Vec::new();
+        // add arguments to scope of local variable call
+        for arg in function.arguments.iter() {
+            match &arg.kind {
+                super::ASTExpressionKind::Variable(variable) => {
+                    arguments_names.push(variable.identifier().to_string());
+                }
+                _ => {
+                    // self.diagnostics
+                    //     .borrow_mut()
+                    // .report_expected_parameter_definition();
+                }
+            }
+        }
+        self.functions.insert(
+            function.identifier.span.literal.clone(),
+            arguments_names.clone(),
+        );
+
+        // arguments_names.push(function.identifier.span.literal.clone());
+        self.enter_scope(arguments_names);
         for statement in function.body.iter() {
             self.visit_statement(&statement);
         }
+        self.leave_scope();
     }
+
     fn visit_function_call_expression(&mut self, expr: &super::ASTFunctionCallExpression) {
-        if !self.symbols.contains(&expr.identifier().to_string()) {
+        if !self.check_identifier_in_scope(&expr.identifier().to_string()) {
             self.diagnostics
                 .borrow_mut()
                 .report_undefined_variable(expr.identifier.span.clone());
         }
+
+        let expected_number_of_arguments = self.functions.get(expr.identifier()).unwrap().len();
+        if expected_number_of_arguments != expr.arguments.len() {
+            self.diagnostics
+                .borrow_mut()
+                .report_number_of_function_arguments_mismatch(
+                    expr.identifier.span.clone(),
+                    expected_number_of_arguments,
+                    expr.arguments.len(),
+                );
+            return;
+        }
+
         for arg in expr.arguments.iter() {
             self.visit_expression(arg);
         }
     }
 
     fn visit_variable_expression(&mut self, expr: &super::ASTVariableExpression) {
-        if !self.symbols.contains(&expr.identifier().to_string()) {
+        if !self.check_identifier_in_scope(&expr.identifier().to_string()) {
             self.diagnostics
                 .borrow_mut()
                 .report_undefined_variable(expr.identifier.span.clone());

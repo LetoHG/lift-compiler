@@ -177,7 +177,7 @@ impl Parser {
                 self.consume_expected(TokenKind::RightParen);
                 break;
             } else if self.current_token().kind == TokenKind::Comma {
-                println!("{:?}", self.consume()); // Consume comma if present
+                self.consume(); // Consume comma if present
             }
         }
         arguments
@@ -185,8 +185,7 @@ impl Parser {
 
     fn parse_function_call_expression(&mut self) -> ASTExpression {
         let identifier = self.peek(-1).clone();
-        println!("func: {:?}", self.consume());
-        print!("{:?}", self.current_token());
+        self.consume();
         let arguments = self.parse_arguments_list();
         self.consume_expected(TokenKind::RightParen);
         ASTExpression::function_call(identifier.clone(), arguments)

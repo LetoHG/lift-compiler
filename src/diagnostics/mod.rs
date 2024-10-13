@@ -70,4 +70,19 @@ impl DiagnosticsColletion {
     pub fn report_undefined_variable(&mut self, span: TextSpan) {
         self.report_error(format!("Not found in this scope"), span);
     }
+
+    pub fn report_number_of_function_arguments_mismatch(
+        &mut self,
+        span: TextSpan,
+        expected: usize,
+        found: usize,
+    ) {
+        self.report_error(
+            format!(
+                "Function {} expects {} arguments but {} were given",
+                span.literal, expected, found
+            ),
+            span,
+        );
+    }
 }

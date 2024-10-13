@@ -8,14 +8,14 @@ use crate::compilation_unit::CompilationUnit;
 fn main() -> Result<(), ()> {
     // func a() { return 10; }
     let input = "
-func a() {
+func a(c) {
     let elephant = 2.15;
-    let aligator = (10 + 2) * elephant + 4;
+    let aligator = (10 + 2) * c - elephant + 4;
     let b = 7 - elephant + aligator;
     let crocodile = aligator + 3.1415 / (2 * b);
-    return aligator;
+    return elephant * c;
 }
-return a();
+return a(7);
 ";
 
     let compilation_unit = CompilationUnit::compile(input)?;

@@ -1,26 +1,64 @@
 use std::collections::HashMap;
+use std::fmt::Arguments;
 
 use super::{
-    ASTBinaryOperator, ASTBinaryOperatorKind, ASTReturnStatement, ASTStatementKind, ASTVisitor,
+    ASTBinaryOperator, ASTBinaryOperatorKind, ASTFunctionStatement, ASTReturnStatement,
+    ASTStatementKind, ASTVisitor,
 };
 
-use termion::color;
-use termion::color::Fg;
+type Scope = HashMap<String, f64>;
 pub struct ASTSolver {
     result: Option<f64>,
-    variables: HashMap<String, f64>,
+    scopes: Vec<Scope>,
+    functions: HashMap<String, ASTFunctionStatement>,
 }
 
 impl ASTSolver {
     pub fn new() -> Self {
         Self {
+            scopes: vec![Scope::new()],
             result: None,
-            variables: HashMap::new(),
+            functions: HashMap::new(),
         }
     }
 
     pub fn print_result(&self) {
         println!("Solver result: {}", self.result.unwrap());
+    }
+
+    fn enter_scope(&mut self, scope_variables: Scope) {
+        self.scopes.push(scope_variables);
+        // self.active_scope += 1;
+    }
+
+    fn leave_scope(&mut self) {
+        self.scopes.pop();
+        // self.active_scope -= 1;
+    }
+
+    fn add_identifier_to_scope(&mut self, identifier: &String, value: f64) {
+        self.scopes
+            .last_mut()
+            .unwrap()
+            .insert(identifier.clone(), value);
+    }
+
+    fn check_identifier_in_scope(&self, identifier: &String) -> bool {
+        for scope in self.scopes.iter().rev() {
+            if scope.contains_key(identifier) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    fn get_identifier_in_scope(&self, identifier: &String) -> Option<f64> {
+        for scope in self.scopes.iter().rev() {
+            if scope.contains_key(identifier) {
+                return scope.get(identifier).copied();
+            }
+        }
+        return None;
     }
 }
 
@@ -30,40 +68,48 @@ impl ASTVisitor for ASTSolver {
     }
     fn visit_let_statement(&mut self, statement: &super::ASTLetStatement) {
         self.visit_expression(&statement.initializer);
-        self.variables.insert(
-            statement.identifier.span.literal.clone(),
-            self.result.unwrap(),
-        );
+        self.add_identifier_to_scope(&statement.identifier.span.literal, self.result.unwrap());
     }
 
     fn visit_funtion_statement(&mut self, function: &super::ASTFunctionStatement) {
-        if function.body.len() == 0 {
-            self.variables
-                .insert(function.identifier.span.literal.clone(), 0.0);
-            return;
-        }
+        self.functions
+            .insert(function.identifier.span.literal.clone(), function.clone());
 
-        match function.body.last().unwrap().kind {
-            ASTStatementKind::ReturnStatement(_) => {
-                for statement in function.body.iter() {
-                    self.visit_statement(statement);
-                }
-                self.variables.insert(
-                    function.identifier.span.literal.clone(),
-                    self.result.unwrap(),
-                );
-            }
-            _ => {
-                self.variables
-                    .insert(function.identifier.span.literal.clone(), 0.0);
-            }
-        };
+        self.add_identifier_to_scope(&function.identifier.span.literal, 0.0);
     }
 
-    fn visit_function_call_expression(&mut self, expr: &super::ASTFunctionCallExpression) {}
+    fn visit_function_call_expression(&mut self, expr: &super::ASTFunctionCallExpression) {
+        if !self.check_identifier_in_scope(&expr.identifier.span.literal) {}
+
+        let func = self
+            .functions
+            .get(&expr.identifier.span.literal)
+            .unwrap()
+            .clone();
+        let mut arguments: Scope = Scope::new();
+
+        // evaluate arguments and add them to scope
+        // arguments.push(expr.identifier.span.literal.clone());
+        for (arg_expr, func_arg) in expr.arguments.iter().zip(func.arguments.iter()) {
+            self.visit_expression(&arg_expr);
+            let arg_name = match &func_arg.kind {
+                super::ASTExpressionKind::Variable(variable) => {
+                    variable.identifier.span.literal.clone()
+                }
+                _ => todo!(),
+            };
+            arguments.insert(arg_name, self.result.unwrap());
+        }
+        self.enter_scope(arguments);
+        for statement in func.body.iter() {
+            self.visit_statement(&statement);
+        }
+        self.leave_scope();
+    }
 
     fn visit_variable_expression(&mut self, expr: &super::ASTVariableExpression) {
-        self.result = Some(*self.variables.get(expr.identifier()).unwrap());
+        self.result = self.get_identifier_in_scope(&expr.identifier.span.literal);
+        // self.result = Some(*self.variables.get(expr.identifier()).unwrap());
     }
 
     fn visit_binary_expression(&mut self, expr: &super::ASTBinaryExpression) {
