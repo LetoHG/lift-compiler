@@ -9,14 +9,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b048fb63fd8b5923fc5aa7b340d8e156aec7ec02f0c78fa8a6ddc2613f6f71de"
 
 [[package]]
-name = "cli-calculator"
-version = "0.1.0"
-dependencies = [
- "nerd-font-symbols",
- "termion",
-]
-
-[[package]]
 name = "libc"
 version = "0.2.159"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -31,6 +23,14 @@ dependencies = [
  "bitflags",
  "libc",
  "redox_syscall",
+]
+
+[[package]]
+name = "lift-compiler"
+version = "0.1.0"
+dependencies = [
+ "nerd-font-symbols",
+ "termion",
 ]
 
 [[package]]

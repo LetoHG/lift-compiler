@@ -13,7 +13,7 @@
           "test",
           "--no-run",
           "--lib",
-          "--package=cli-calculator"
+          "--package=lift-compiler"
         ],
         "filter": {
           "name": "cli_calculator",
@@ -26,15 +26,15 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug executable 'cli-calculator'",
+      "name": "Debug executable 'lift-compiler'",
       "cargo": {
         "args": [
           "build",
-          "--bin=cli-calculator",
-          "--package=cli-calculator"
+          "--bin=lift-compiler",
+          "--package=lift-compiler"
         ],
         "filter": {
-          "name": "cli-calculator",
+          "name": "lift-compiler",
           "kind": "bin"
         }
       },
@@ -44,16 +44,16 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug unit tests in executable 'cli-calculator'",
+      "name": "Debug unit tests in executable 'lift-compiler'",
       "cargo": {
         "args": [
           "test",
           "--no-run",
-          "--bin=cli-calculator",
-          "--package=cli-calculator"
+          "--bin=lift-compiler",
+          "--package=lift-compiler"
         ],
         "filter": {
-          "name": "cli-calculator",
+          "name": "lift-compiler",
           "kind": "bin"
         }
       },
