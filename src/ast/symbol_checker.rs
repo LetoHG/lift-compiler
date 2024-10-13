@@ -121,6 +121,10 @@ impl ASTVisitor for SymbolChecker {
         }
     }
 
+    fn visit_unary_expression(&mut self, expr: &super::ASTUnaryExpression) {
+        self.visit_expression(&expr.expr);
+    }
+
     fn visit_binary_expression(&mut self, expr: &super::ASTBinaryExpression) {
         self.visit_expression(&expr.left);
         self.visit_expression(&expr.right);

@@ -192,7 +192,8 @@ impl Parser {
     }
 
     fn parse_primary_expression(&mut self) -> ASTExpression {
-        let token = self.consume();
+        let token = self.consume().clone();
+
         return match token.kind {
             TokenKind::Integer(i) => ASTExpression::integer(i),
             TokenKind::Floating(i) => ASTExpression::float(i),
@@ -209,11 +210,31 @@ impl Parser {
                 let found_token = self.consume_expected(TokenKind::RightParen);
                 ASTExpression::parenthesized(expr)
             }
+            TokenKind::BitwiseNOT => {
+                let expr = self.parse_binary_expression(0);
+                ASTExpression::unary(
+                    super::ASTUnaryOperator {
+                        kind: super::ASTUnaryOperatorKind::BitwiseNOT,
+                        token,
+                    },
+                    expr,
+                )
+            }
+            TokenKind::ExclemationMark => {
+                let expr: ASTExpression = self.parse_binary_expression(0);
+                ASTExpression::unary(
+                    super::ASTUnaryOperator {
+                        kind: super::ASTUnaryOperatorKind::LogicNot,
+                        token,
+                    },
+                    expr,
+                )
+            }
             _ => {
                 self.diagnostics_colletion
                     .borrow_mut()
-                    .report_expected_expression(token);
-                ASTExpression::error(token.span.clone())
+                    .report_expected_expression(&token);
+                ASTExpression::error(token.span)
             }
         };
     }

@@ -7,25 +7,6 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug unit tests in library 'cli_calculator'",
-      "cargo": {
-        "args": [
-          "test",
-          "--no-run",
-          "--lib",
-          "--package=lift-compiler"
-        ],
-        "filter": {
-          "name": "cli_calculator",
-          "kind": "lib"
-        }
-      },
-      "args": [],
-      "cwd": "${workspaceFolder}"
-    },
-    {
-      "type": "lldb",
-      "request": "launch",
       "name": "Debug executable 'lift-compiler'",
       "cargo": {
         "args": [

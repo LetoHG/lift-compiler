@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use std::fmt::Arguments;
+use std::{collections::HashMap, ops::Not};
 
 use super::{
     ASTBinaryOperator, ASTBinaryOperatorKind, ASTFunctionStatement, ASTReturnStatement,
@@ -112,6 +112,13 @@ impl ASTVisitor for ASTSolver {
         // self.result = Some(*self.variables.get(expr.identifier()).unwrap());
     }
 
+    fn visit_unary_expression(&mut self, expr: &super::ASTUnaryExpression) {
+        self.visit_expression(&expr.expr);
+        self.result = Some(match expr.operator.kind {
+            super::ASTUnaryOperatorKind::BitwiseNOT => (self.result.unwrap() as i64).not() as f64,
+            super::ASTUnaryOperatorKind::LogicNot => ((self.result.unwrap() == 0.0) as i64) as f64,
+        });
+    }
     fn visit_binary_expression(&mut self, expr: &super::ASTBinaryExpression) {
         self.visit_expression(&expr.left);
         let left = self.result.unwrap();

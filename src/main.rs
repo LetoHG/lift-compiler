@@ -9,11 +9,11 @@ fn main() -> Result<(), ()> {
     // func a() { return 10; }
     let input = "\
 func a(arg1, arg2) {
-  let c = arg2 / 1.5
+  let c = arg2 / 071
   return arg1 * c
 }
 
-return a(2, 7.67)
+return a(0x02, 7.67)
 ";
     let compilation_unit = CompilationUnit::compile(input)?;
     compilation_unit.run();

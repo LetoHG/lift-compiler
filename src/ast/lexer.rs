@@ -13,10 +13,27 @@ pub enum TokenKind {
     Astrisk,
     Slash,
     Equal,
+    BitwiseOR,
+    BitwiseAND,
+    BitwiseXOR,
+    BitwiseNOT,
+    ExclemationMark,
+    EqualTo,
+    NotEqualTo,
+    LogicAND,
+    LogicOR,
+    GreaterThan,
+    GreaterThanOrEqual,
+    LessThan,
+    LessThanOrEqual,
     LeftParen,
     RightParen,
     LeftBrace,
     RightBrace,
+    LeftBracket,
+    RightBracket,
+    LeftAngleBracket,
+    RightAngleBracket,
     Comma,
     SemiColon,
     Whitespace,
@@ -47,6 +64,11 @@ impl fmt::Display for TokenKind {
             TokenKind::Whitespace => write!(f, "Whitespace"),
             TokenKind::Bad => write!(f, "Bad"),
             TokenKind::Eof => write!(f, "Eof"),
+            TokenKind::EqualTo => write!(f, "=="),
+            TokenKind::NotEqualTo => write!(f, "!="),
+            TokenKind::LogicAND => write!(f, "&&"),
+            TokenKind::LogicOR => write!(f, "||"),
+            _ => todo!(),
         }
     }
 }
@@ -104,7 +126,7 @@ impl Lexer {
 
         let start = self.cursor;
         let mut kind = TokenKind::Bad;
-        let c = self.current_char();
+        let c = self.current_char()?;
 
         if Self::is_number_start(&c) {
             kind = self.consume_number();
@@ -116,6 +138,8 @@ impl Lexer {
                 "return" => TokenKind::Return,
                 _ => TokenKind::Identifier,
             };
+        } else if Self::is_operator_start(&c) {
+            kind = self.consume_boolean_operator();
         } else if Self::is_whitespace(&c) {
             self.consume();
             kind = TokenKind::Whitespace;
@@ -145,8 +169,19 @@ impl Lexer {
         *c == '.'
     }
 
-    fn current_char(&mut self) -> char {
-        self.input.chars().nth(self.cursor).unwrap()
+    fn is_operator_start(c: &char) -> bool {
+        false
+        // "=="
+        // "&&"
+        // "||"
+        // "+="
+        // "-="
+        // "*="
+        // "/="
+    }
+
+    fn current_char(&mut self) -> Option<char> {
+        self.input.chars().nth(self.cursor)
     }
 
     fn consume(&mut self) -> Option<char> {
@@ -155,7 +190,7 @@ impl Lexer {
         }
         let c = self.current_char();
         self.cursor += 1;
-        Some(c)
+        c
     }
 
     fn consume_number(&mut self) -> TokenKind {
@@ -163,11 +198,29 @@ impl Lexer {
         let mut fractional_part: i64 = 0;
         let mut divisior_for_fraction: i64 = 1;
 
+        let mut oct_format = false;
+        let mut hex_format = false;
+        if self.current_char().unwrap() == '0' {
+            self.consume();
+            oct_format = true;
+
+            if self.current_char().unwrap() == 'x' {
+                self.consume();
+                hex_format = true;
+                oct_format = false;
+            }
+        }
+
         let mut dot_found = false;
 
-        loop {
-            let c = self.current_char();
-            if c.is_digit(10) {
+        while let Some(c) = self.current_char() {
+            if oct_format && c.is_digit(8) {
+                self.consume();
+                integer_part = integer_part * 8 + c.to_digit(8).unwrap() as i64;
+            } else if hex_format && c.is_digit(16) {
+                self.consume();
+                integer_part = integer_part * 16 + c.to_digit(16).unwrap() as i64;
+            } else if c.is_digit(10) {
                 self.consume();
                 if !dot_found {
                     integer_part = integer_part * 10 + c.to_digit(10).unwrap() as i64;
@@ -196,15 +249,22 @@ impl Lexer {
 
     fn consume_identifier(&mut self) -> String {
         let mut identifier = String::new();
-        loop {
-            let c = self.current_char();
+        while let Some(c) = self.current_char() {
             if c.is_alphanumeric() || c == '_' {
                 identifier.push(c);
                 self.consume();
             } else {
-                return identifier;
+                break;
             }
         }
+        identifier
+    }
+
+    fn consume_boolean_operator(&mut self) -> TokenKind {
+        // let c1 = self.consume().unwrap();
+        // let c1 = self.consume().unwrap();
+
+        TokenKind::Bad
     }
 
     fn consume_punctuation(&mut self) -> TokenKind {
@@ -214,8 +274,17 @@ impl Lexer {
             '*' => TokenKind::Astrisk,
             '/' => TokenKind::Slash,
             '=' => TokenKind::Equal,
+            '|' => TokenKind::BitwiseOR,
+            '&' => TokenKind::BitwiseAND,
+            '^' => TokenKind::BitwiseXOR,
+            '~' => TokenKind::BitwiseNOT,
+            '!' => TokenKind::ExclemationMark,
             '(' => TokenKind::LeftParen,
             ')' => TokenKind::RightParen,
+            '[' => TokenKind::LeftBracket,
+            ']' => TokenKind::RightBracket,
+            '<' => TokenKind::LeftAngleBracket,
+            '>' => TokenKind::RightAngleBracket,
             '{' => TokenKind::LeftBrace,
             '}' => TokenKind::RightBrace,
             ',' => TokenKind::Comma,

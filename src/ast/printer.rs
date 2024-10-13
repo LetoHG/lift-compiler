@@ -136,6 +136,21 @@ impl ASTVisitor for ASTTreePrinter {
         // self.decrease_indentation();
     }
 
+    fn visit_unary_expression(&mut self, expr: &super::ASTUnaryExpression) {
+        self.print(
+            &format!(
+                "{}  Unary: {}{}",
+                Self::BIN_EXPR_ICON,
+                color::Fg(Self::OPERATOR_COLOR),
+                expr.operator.token.span.literal
+            ),
+            &Self::BIN_EXPR_COLOR,
+        );
+        self.increase_indentation();
+        self.visit_expression(&expr.expr);
+        self.decrease_indentation();
+    }
+
     fn visit_binary_expression(&mut self, expr: &super::ASTBinaryExpression) {
         self.print(
             &format!(
@@ -326,6 +341,15 @@ impl ASTVisitor for ASTHiglightPrinter {
             Fg(Self::VARIABLE_COLOR),
             expr.identifier()
         ));
+    }
+
+    fn visit_unary_expression(&mut self, expr: &super::ASTUnaryExpression) {
+        self.print(&format!(
+            "{}{}",
+            Fg(Self::TEXT_COLOR),
+            expr.operator.token.span.literal
+        ));
+        self.visit_expression(&expr.expr);
     }
 
     fn visit_binary_expression(&mut self, expr: &super::ASTBinaryExpression) {

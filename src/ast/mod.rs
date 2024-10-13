@@ -53,6 +53,7 @@ pub trait ASTVisitor {
             ASTExpressionKind::FloatingLiteral(f) => self.visit_float(f),
             ASTExpressionKind::Variable(expr) => self.visit_variable_expression(expr),
             ASTExpressionKind::StringLiteral(_) => todo!(),
+            ASTExpressionKind::Unary(expr) => self.visit_unary_expression(expr),
             ASTExpressionKind::Binary(expr) => self.visit_binary_expression(expr),
             ASTExpressionKind::Parenthesized(expr) => self.visit_parenthesised_expression(expr),
             ASTExpressionKind::FunctionCall(expr) => self.visit_function_call_expression(expr),
@@ -81,6 +82,7 @@ pub trait ASTVisitor {
     }
 
     fn visit_variable_expression(&mut self, expr: &ASTVariableExpression);
+    fn visit_unary_expression(&mut self, expr: &ASTUnaryExpression);
     fn visit_binary_expression(&mut self, expr: &ASTBinaryExpression);
     fn visit_parenthesised_expression(&mut self, expr: &ASTParenthesizedExpression);
     fn visit_binary_operator(&mut self, op: &ASTBinaryOperator);
@@ -162,6 +164,7 @@ enum ASTExpressionKind {
     IntegerLiteral(i64),
     FloatingLiteral(f64),
     StringLiteral(String),
+    Unary(ASTUnaryExpression),
     Binary(ASTBinaryExpression),
     Parenthesized(ASTParenthesizedExpression),
     Variable(ASTVariableExpression),
@@ -201,6 +204,15 @@ impl ASTExpression {
         }
     }
 
+    fn unary(operator: ASTUnaryOperator, expr: ASTExpression) -> Self {
+        Self {
+            kind: ASTExpressionKind::Unary(ASTUnaryExpression {
+                operator,
+                expr: Box::new(expr),
+            }),
+        }
+    }
+
     fn binary(operator: ASTBinaryOperator, left: ASTExpression, right: ASTExpression) -> Self {
         Self {
             kind: ASTExpressionKind::Binary(ASTBinaryExpression {
@@ -227,6 +239,23 @@ impl ASTExpression {
             }),
         }
     }
+}
+
+#[derive(Clone)]
+enum ASTUnaryOperatorKind {
+    BitwiseNOT,
+    LogicNot,
+}
+
+#[derive(Clone)]
+struct ASTUnaryOperator {
+    kind: ASTUnaryOperatorKind,
+    token: lexer::Token,
+}
+#[derive(Clone)]
+pub struct ASTUnaryExpression {
+    operator: ASTUnaryOperator,
+    expr: Box<ASTExpression>,
 }
 
 #[derive(Debug, Clone)]
