@@ -282,9 +282,14 @@ impl ASTVisitor for ASTHiglightPrinter {
             function.identifier.span.literal,
             Fg(Self::TEXT_COLOR),
         ));
-        for arg in function.arguments.iter() {
+        for (i, arg) in function.arguments.iter().enumerate() {
             self.visit_expression(arg);
+            if (i + 1) < function.arguments.len() {
+                self.print(&format!("{},", Fg(Self::TEXT_COLOR)));
+                self.add_whitespace();
+            }
         }
+
         self.print(&format!("{}) {}", Fg(Self::TEXT_COLOR), '{'));
         self.add_newline();
         for statement in function.body.iter() {
@@ -307,7 +312,7 @@ impl ASTVisitor for ASTHiglightPrinter {
         for (i, arg) in expr.arguments.iter().enumerate() {
             self.visit_expression(arg);
             if (i + 1) < expr.arguments.len() {
-                self.print(&format!("{}, ", Fg(Self::TEXT_COLOR)));
+                self.print(&format!("{},", Fg(Self::TEXT_COLOR)));
                 self.add_whitespace();
             }
         }

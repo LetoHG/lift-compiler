@@ -10,7 +10,7 @@ use std::{cell::RefCell, rc::Rc};
 use crate::source_text::SourceText;
 
 pub struct CompilationUnit {
-    ast: ast::Ast,
+    pub(crate) ast: ast::Ast,
     diagnostics_colletion: DiagnosticsColletionCell,
 }
 
@@ -40,7 +40,6 @@ impl CompilationUnit {
             diagnostics_colletion.borrow_mut().diagnostics.len()
         );
         Self::check_diagstics(&source_text, &diagnostics_colletion)?;
-        diagnostics_colletion.borrow_mut().clear();
 
         let mut symbol_checker =
             symbol_checker::SymbolChecker::new(Rc::clone(&diagnostics_colletion));

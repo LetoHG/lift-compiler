@@ -288,3 +288,252 @@ impl ASTFunctionCallExpression {
         &self.identifier.span.literal
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::compilation_unit::{self, CompilationUnit};
+
+    use super::lexer::Token;
+    use super::lexer::TokenKind;
+    use super::ASTVisitor;
+    use super::Ast;
+
+    #[derive(Debug, PartialEq)]
+    enum TestASTNode {
+        Floating(f64),
+        Integer(i64),
+        Variable(String),
+        LetStatement(String),
+        ReturnStatement,
+        FunctionStatement(Vec<String>),
+        BinaryExpr(TokenKind),
+        ParenExpr,
+        FunctionCall(String),
+    }
+    struct ASTVerifier {
+        actual: Vec<TestASTNode>,
+        expected: Vec<TestASTNode>,
+    }
+
+    impl ASTVerifier {
+        pub fn new(input: &str, expected_ast: Vec<TestASTNode>) -> Self {
+            let compilation_unit = CompilationUnit::compile(input);
+            assert!(compilation_unit.is_ok());
+            let mut verifier = ASTVerifier {
+                actual: Vec::new(),
+                expected: expected_ast,
+            };
+
+            match compilation_unit {
+                Ok(c) => verifier.flatten_ast(&c.ast),
+                Err(_) => (),
+            };
+            verifier
+        }
+
+        fn flatten_ast(&mut self, ast: &Ast) {
+            ast.visit(&mut *self);
+        }
+
+        pub fn verify(&self) {
+            assert_eq!(
+                self.expected.len(),
+                self.actual.len(),
+                "Expected {} nodes only has {} ",
+                self.expected.len(),
+                self.actual.len()
+            );
+
+            for (ac, ex) in self.actual.iter().zip(self.expected.iter()) {
+                assert_eq!(
+                    ac, ex,
+                    "Node do not match. Expected {:?} but found {:?}",
+                    ex, ac
+                )
+            }
+        }
+    }
+
+    impl ASTVisitor for ASTVerifier {
+        fn visit_return_statement(&mut self, statement: &super::ASTReturnStatement) {
+            self.actual.push(TestASTNode::ReturnStatement);
+            self.visit_expression(&statement.expr);
+        }
+
+        fn visit_let_statement(&mut self, statement: &super::ASTLetStatement) {
+            self.actual.push(TestASTNode::LetStatement(
+                statement.identifier.span.literal.clone(),
+            ));
+            self.visit_expression(&statement.initializer);
+        }
+
+        fn visit_funtion_statement(&mut self, function: &super::ASTFunctionStatement) {
+            let mut args = Vec::new();
+            args.push(function.identifier.span.literal.clone());
+            for arg in function.arguments.iter() {
+                match &arg.kind {
+                    super::ASTExpressionKind::Variable(variable) => {
+                        args.push(variable.identifier().to_string());
+                    }
+                    _ => (),
+                }
+            }
+
+            self.actual.push(TestASTNode::FunctionStatement(args));
+
+            for statement in function.body.iter() {
+                self.visit_statement(statement);
+            }
+        }
+        fn visit_function_call_expression(&mut self, expr: &super::ASTFunctionCallExpression) {
+            self.actual.push(TestASTNode::FunctionCall(
+                expr.identifier.span.literal.clone(),
+            ));
+            for arg in expr.arguments.iter() {
+                self.visit_expression(arg);
+            }
+        }
+
+        fn visit_variable_expression(&mut self, expr: &super::ASTVariableExpression) {
+            self.actual
+                .push(TestASTNode::Variable(expr.identifier.span.literal.clone()));
+        }
+
+        fn visit_binary_expression(&mut self, expr: &super::ASTBinaryExpression) {
+            self.actual
+                .push(TestASTNode::BinaryExpr(expr.operator.token.kind.clone()));
+            self.visit_expression(&expr.left);
+            self.visit_expression(&expr.right);
+        }
+
+        fn visit_parenthesised_expression(&mut self, expr: &super::ASTParenthesizedExpression) {
+            self.actual.push(TestASTNode::ParenExpr);
+            self.visit_expression(&expr.expr);
+        }
+
+        fn visit_binary_operator(&mut self, op: &super::ASTBinaryOperator) {}
+
+        fn visit_integer(&mut self, integer: &i64) {
+            self.actual.push(TestASTNode::Integer(integer.clone()));
+        }
+
+        fn visit_float(&mut self, float: &f64) {
+            self.actual.push(TestASTNode::Floating(float.clone()));
+        }
+    }
+
+    #[test]
+    fn should_parse_let_statement() {
+        let input = "let a = 10;";
+        let expected_ast = vec![
+            TestASTNode::LetStatement("a".to_string()),
+            TestASTNode::Integer(10),
+        ];
+
+        let verifier = ASTVerifier::new(input, expected_ast);
+        verifier.verify();
+    }
+
+    #[test]
+    fn should_parse_return_statement() {
+        let input = "let a = 7;
+                           return a + 10;
+                           ";
+        let expected_ast = vec![
+            TestASTNode::LetStatement("a".to_string()),
+            TestASTNode::Integer(7),
+            TestASTNode::ReturnStatement,
+            TestASTNode::BinaryExpr(TokenKind::Plus),
+            TestASTNode::Variable("a".to_string()),
+            TestASTNode::Integer(10),
+        ];
+
+        let verifier = ASTVerifier::new(input, expected_ast);
+        verifier.verify();
+    }
+
+    #[test]
+    fn should_parse_simple_binary_addition_statement() {
+        let input = "10 + 3.1415;";
+        let expected_ast = vec![
+            TestASTNode::BinaryExpr(TokenKind::Plus),
+            TestASTNode::Integer(10),
+            TestASTNode::Floating(3.1415),
+        ];
+
+        let verifier = ASTVerifier::new(input, expected_ast);
+        verifier.verify();
+    }
+
+    #[test]
+    fn should_parse_complex_binary_statement() {
+        let input = "let a = (7.2 - 10) / 2 + 3.1415 * 8;";
+        let expected_ast = vec![
+            TestASTNode::LetStatement("a".to_string()),
+            TestASTNode::BinaryExpr(TokenKind::Plus),
+            TestASTNode::BinaryExpr(TokenKind::Slash),
+            TestASTNode::ParenExpr,
+            TestASTNode::BinaryExpr(TokenKind::Minus),
+            TestASTNode::Floating(7.2),
+            TestASTNode::Integer(10),
+            TestASTNode::Integer(2),
+            TestASTNode::BinaryExpr(TokenKind::Astrisk),
+            TestASTNode::Floating(3.1415),
+            TestASTNode::Integer(8),
+        ];
+
+        let verifier = ASTVerifier::new(input, expected_ast);
+        verifier.verify();
+    }
+
+    #[test]
+    fn should_parse_function_declaration() {
+        let input = "func f(a, b, c) { return a + b + c; }";
+        let expected_ast = vec![
+            TestASTNode::FunctionStatement(vec![
+                "f".to_string(), // function name
+                "a".to_string(),
+                "b".to_string(),
+                "c".to_string(),
+            ]),
+            TestASTNode::ReturnStatement,
+            TestASTNode::BinaryExpr(TokenKind::Plus),
+            TestASTNode::BinaryExpr(TokenKind::Plus),
+            TestASTNode::Variable("a".to_string()),
+            TestASTNode::Variable("b".to_string()),
+            TestASTNode::Variable("c".to_string()),
+        ];
+
+        let verifier = ASTVerifier::new(input, expected_ast);
+        verifier.verify();
+    }
+
+    #[test]
+    fn should_parse_function_call() {
+        let input = "\
+        func f(a, b, c) { return a + b + c; }
+        f(1, 2, 6)
+        ";
+        let expected_ast = vec![
+            TestASTNode::FunctionStatement(vec![
+                "f".to_string(), // function name
+                "a".to_string(),
+                "b".to_string(),
+                "c".to_string(),
+            ]),
+            TestASTNode::ReturnStatement,
+            TestASTNode::BinaryExpr(TokenKind::Plus),
+            TestASTNode::BinaryExpr(TokenKind::Plus),
+            TestASTNode::Variable("a".to_string()),
+            TestASTNode::Variable("b".to_string()),
+            TestASTNode::Variable("c".to_string()),
+            TestASTNode::FunctionCall("f".to_string()),
+            TestASTNode::Integer(1),
+            TestASTNode::Integer(2),
+            TestASTNode::Integer(6),
+        ];
+
+        let verifier = ASTVerifier::new(input, expected_ast);
+        verifier.verify();
+    }
+}
