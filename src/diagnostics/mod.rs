@@ -1,5 +1,4 @@
 pub mod printer;
-pub mod sourcetext;
 
 use crate::ast::lexer::{TextSpan, Token, TokenKind};
 use std::{cell::RefCell, rc::Rc};

@@ -1,15 +1,14 @@
-use super::sourcetext;
 use super::Diagnostic;
-
+use crate::source_text::SourceText;
 use termion::color;
 
 pub struct DiagnosticsPrinter<'a> {
-    source_text: &'a sourcetext::SourceText,
+    source_text: &'a SourceText,
     diagnostics: &'a [Diagnostic],
 }
 
 impl<'a> DiagnosticsPrinter<'a> {
-    pub fn new(source_text: &'a sourcetext::SourceText, diagnostics: &'a [Diagnostic]) -> Self {
+    pub fn new(source_text: &'a SourceText, diagnostics: &'a [Diagnostic]) -> Self {
         Self {
             source_text,
             diagnostics,
@@ -43,12 +42,14 @@ impl<'a> DiagnosticsPrinter<'a> {
 
         format!(
             // "{}{line_number_str}{}{prefix}{error_symbol}{suffix}\n{whitespace}{}{}\n{whitespace}|\n{whitespace}+-- {}{}",
-            "{}{line_number_str}{}{prefix}{error_symbol}{suffix}\n{whitespace}{}{} {}{}",
+            "{}{line_number_str}{}{prefix}{error_symbol}{suffix}\n{whitespace}{}{} {}({}:{}){}",
             color::Fg(color::Blue),
             color::Fg(color::Reset),
             color::Fg(message_color.as_ref()),
             "^".repeat(symbol_len),
             diagnostic.message,
+            line_number,
+            col,
             color::Fg(color::Reset)
         )
         .to_string()

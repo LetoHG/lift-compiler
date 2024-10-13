@@ -1,9 +1,205 @@
-use super::{
-    ASTBinaryOperator, ASTBinaryOperatorKind, ASTLetStatement, ASTReturnStatement, ASTVisitor,
-};
+use super::ASTVisitor;
 
 use termion::color::Fg;
 use termion::color::{self, White};
+
+pub struct ASTTreePrinter {
+    indentation: usize,
+}
+
+impl ASTTreePrinter {
+    const INDENATION: usize = 2;
+
+    const TEXT_COLOR: color::White = color::White;
+    const STATEMENT_COLOR: color::Yellow = color::Yellow;
+    const LET_STATEMENT_COLOR: color::Green = color::Green;
+    const EXPR_COLOR: color::Green = color::Green;
+    const BIN_EXPR_COLOR: color::LightBlue = color::LightBlue;
+    const OPERATOR_COLOR: color::LightYellow = color::LightYellow;
+
+    const STATEMENT_ICON: &str = nerd_font_symbols::md::MD_SIGMA;
+    const LET_STATEMENT_ICON: &str = nerd_font_symbols::md::MD_EQUAL;
+    const FUNC_STATEMENT_ICON: &str = nerd_font_symbols::md::MD_FUNCTION_VARIANT;
+    const FUNC_CALL_STATEMENT_ICON: &str = nerd_font_symbols::md::MD_FUNCTION;
+    const EXPR_ICON: &str = nerd_font_symbols::md::MD_FUNCTION_VARIANT;
+    const BIN_EXPR_ICON: &str = nerd_font_symbols::cod::COD_SYMBOL_OPERATOR;
+    const VARIABLE_ICON: &str = nerd_font_symbols::md::MD_VARIABLE;
+
+    pub fn new() -> Self {
+        Self { indentation: 0 }
+    }
+
+    fn increase_indentation(&mut self) {
+        self.indentation += Self::INDENATION;
+    }
+    fn decrease_indentation(&mut self) {
+        self.indentation -= Self::INDENATION;
+    }
+
+    fn print(&self, text: &str, text_color: &dyn color::Color) {
+        // println!("{}├─ {}", "│ ".repeat(self.indentation), text);
+        println!(
+            "{}└─ {}{}{}",
+            " ".repeat(self.indentation),
+            color::Fg(text_color),
+            text,
+            color::Fg(color::Reset)
+        );
+    }
+}
+
+impl ASTVisitor for ASTTreePrinter {
+    fn visit_statement(&mut self, statement: &super::ASTStatement) {
+        self.print(
+            &format!("{}  Statement:", Self::STATEMENT_ICON),
+            &Self::STATEMENT_COLOR,
+        );
+        self.increase_indentation();
+        ASTVisitor::do_visit_statement(self, statement);
+        self.decrease_indentation();
+    }
+
+    fn visit_return_statement(&mut self, statement: &super::ASTReturnStatement) {
+        self.print(
+            &format!("{}  Return:", Self::LET_STATEMENT_ICON),
+            &Self::LET_STATEMENT_COLOR,
+        );
+        self.increase_indentation();
+        ASTVisitor::do_visit_expression(self, &statement.expr);
+        self.decrease_indentation();
+    }
+    fn visit_let_statement(&mut self, statement: &super::ASTLetStatement) {
+        self.print(
+            &format!(
+                "{}  Declaration: {}{}",
+                Self::LET_STATEMENT_ICON,
+                color::Fg(Self::TEXT_COLOR),
+                &statement.identifier.span.literal
+            ),
+            &Self::LET_STATEMENT_COLOR,
+        );
+        self.increase_indentation();
+        ASTVisitor::do_visit_expression(self, &statement.initializer);
+        self.decrease_indentation();
+    }
+    fn visit_funtion_statement(&mut self, function: &super::ASTFunctionStatement) {
+        self.print(
+            &format!(
+                "{}  Function: {}{}",
+                Self::FUNC_STATEMENT_ICON,
+                color::Fg(Self::TEXT_COLOR),
+                &function.identifier.span.literal
+            ),
+            &Self::TEXT_COLOR,
+        );
+
+        self.increase_indentation();
+        self.print(&format!("Arguments:"), &Self::TEXT_COLOR);
+        self.increase_indentation();
+        for expr in function.arguments.iter() {
+            ASTVisitor::do_visit_expression(self, &expr);
+        }
+        self.decrease_indentation();
+
+        self.print(&format!("Body:"), &Self::TEXT_COLOR);
+        self.increase_indentation();
+        for statement in function.body.iter() {
+            ASTVisitor::do_visit_statement(self, &statement);
+        }
+        self.decrease_indentation();
+    }
+
+    fn visit_function_call_expression(&mut self, expr: &super::ASTFunctionCallExpression) {
+        self.print(
+            &format!(
+                "{}  FunctionCall: {}{}",
+                Self::FUNC_CALL_STATEMENT_ICON,
+                color::Fg(Self::TEXT_COLOR),
+                &expr.identifier.span.literal
+            ),
+            &Self::TEXT_COLOR,
+        );
+        self.increase_indentation();
+        for expr in expr.arguments.iter() {
+            ASTVisitor::do_visit_expression(self, &expr);
+        }
+        self.decrease_indentation();
+    }
+
+    fn visit_expression(&mut self, expr: &super::ASTExpression) {
+        // self.print(
+        //     &format!("{}  Expression:", Self::EXPR_ICON),
+        //     &Self::EXPR_COLOR,
+        // );
+        // self.increase_indentation();
+        ASTVisitor::do_visit_expression(self, &expr);
+        // self.decrease_indentation();
+    }
+
+    fn visit_binary_expression(&mut self, expr: &super::ASTBinaryExpression) {
+        self.print(
+            &format!(
+                "{}  Binary: {}{}",
+                Self::BIN_EXPR_ICON,
+                color::Fg(Self::OPERATOR_COLOR),
+                expr.operator.token.span.literal
+            ),
+            &Self::BIN_EXPR_COLOR,
+        );
+        self.increase_indentation();
+        // self.print_binary_operator(&expr.operator);
+        // self.print(&format!("{:?}", expr.operator.kind), &Self::TEXT_COLOR);
+        self.visit_expression(&expr.left);
+        self.visit_expression(&expr.right);
+        self.decrease_indentation();
+    }
+
+    fn visit_binary_operator(&mut self, op: &super::ASTBinaryOperator) {
+        self.print(
+            &format!(
+                "Operator: {}",
+                match op.kind {
+                    super::ASTBinaryOperatorKind::Plus => '+',
+                    super::ASTBinaryOperatorKind::Minus => '-',
+                    super::ASTBinaryOperatorKind::Multiply => '*',
+                    super::ASTBinaryOperatorKind::Divide => '/',
+                }
+            ),
+            &color::Yellow,
+        );
+    }
+
+    fn visit_parenthesised_expression(&mut self, expr: &super::ASTParenthesizedExpression) {
+        self.print(
+            &format!(
+                "{}  Parenthesized:",
+                nerd_font_symbols::md::MD_CODE_PARENTHESES
+            ),
+            &color::Magenta,
+        );
+        self.increase_indentation();
+        ASTVisitor::do_visit_expression(self, &expr.expr);
+    }
+
+    fn visit_variable_expression(&mut self, expr: &super::ASTVariableExpression) {
+        self.print(
+            &format!("{}  Variable: {}", Self::VARIABLE_ICON, expr.identifier()),
+            &Self::TEXT_COLOR,
+        );
+    }
+    fn visit_error(&mut self, span: &super::TextSpan) {
+        self.print(&format!("Error: {:?}", span), &color::Red);
+    }
+
+    fn visit_integer(&mut self, integer: &i64) {
+        self.print(&format!("Integer: {}", integer), &Self::TEXT_COLOR);
+    }
+
+    fn visit_float(&mut self, float: &f64) {
+        self.print(&format!("Float: {}", float), &Self::TEXT_COLOR);
+    }
+}
+
 pub struct ASTHiglightPrinter {
     indent: usize,
     result: String,
@@ -61,13 +257,13 @@ impl ASTHiglightPrinter {
 }
 
 impl ASTVisitor for ASTHiglightPrinter {
-    fn visit_return_statement(&mut self, statement: &ASTReturnStatement) {
+    fn visit_return_statement(&mut self, statement: &super::ASTReturnStatement) {
         self.print(&format!("{}return", Fg(Self::LET_COLOR)));
         self.add_whitespace();
         self.visit_expression(&statement.expr);
     }
 
-    fn visit_let_statement(&mut self, statement: &ASTLetStatement) {
+    fn visit_let_statement(&mut self, statement: &super::ASTLetStatement) {
         self.print(&format!("{}let", Fg(Self::LET_COLOR)));
         self.add_whitespace();
         self.visit_idenifier(&statement.identifier.span.literal);
@@ -152,15 +348,15 @@ impl ASTVisitor for ASTHiglightPrinter {
         self.print(&format!("{}{}", Fg(Self::FLOAT_COLOR), float));
     }
 
-    fn visit_binary_operator(&mut self, op: &ASTBinaryOperator) {
+    fn visit_binary_operator(&mut self, op: &super::ASTBinaryOperator) {
         self.print(&format!(
             "{}{}",
             Fg(Self::TEXT_COLOR),
             match op.kind {
-                ASTBinaryOperatorKind::Plus => '+',
-                ASTBinaryOperatorKind::Minus => '-',
-                ASTBinaryOperatorKind::Multiply => '*',
-                ASTBinaryOperatorKind::Divide => '/',
+                super::ASTBinaryOperatorKind::Plus => '+',
+                super::ASTBinaryOperatorKind::Minus => '-',
+                super::ASTBinaryOperatorKind::Multiply => '*',
+                super::ASTBinaryOperatorKind::Divide => '/',
             }
         ));
     }
