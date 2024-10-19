@@ -8,6 +8,8 @@ pub enum TokenKind {
     Let,
     Func,
     Return,
+    If,
+    Else,
     Plus,
     Minus,
     Astrisk,
@@ -36,6 +38,7 @@ pub enum TokenKind {
     RightAngleBracket,
     Comma,
     SemiColon,
+    Colon,
     Whitespace,
     Bad,
     Eof,
@@ -49,6 +52,8 @@ impl fmt::Display for TokenKind {
             TokenKind::Identifier => write!(f, "Identifier"),
             TokenKind::Let => write!(f, "Let"),
             TokenKind::Func => write!(f, "Func"),
+            TokenKind::If => write!(f, "If"),
+            TokenKind::Else => write!(f, "Else"),
             TokenKind::Return => write!(f, "Return"),
             TokenKind::Plus => write!(f, "+"),
             TokenKind::Minus => write!(f, "-"),
@@ -68,7 +73,20 @@ impl fmt::Display for TokenKind {
             TokenKind::NotEqualTo => write!(f, "!="),
             TokenKind::LogicAND => write!(f, "&&"),
             TokenKind::LogicOR => write!(f, "||"),
-            _ => todo!(),
+            TokenKind::BitwiseOR => write!(f, "|"),
+            TokenKind::BitwiseAND => write!(f, "&"),
+            TokenKind::BitwiseXOR => write!(f, "^"),
+            TokenKind::BitwiseNOT => write!(f, "~"),
+            TokenKind::ExclemationMark => write!(f, "!"),
+            TokenKind::GreaterThan => write!(f, ">"),
+            TokenKind::GreaterThanOrEqual => write!(f, ">="),
+            TokenKind::LessThan => write!(f, "<"),
+            TokenKind::LessThanOrEqual => write!(f, "<="),
+            TokenKind::LeftBracket => write!(f, "["),
+            TokenKind::RightBracket => write!(f, "]"),
+            TokenKind::LeftAngleBracket => write!(f, "<"),
+            TokenKind::RightAngleBracket => write!(f, ">"),
+            TokenKind::Colon => write!(f, ":"),
         }
     }
 }
@@ -136,6 +154,8 @@ impl Lexer {
                 "let" => TokenKind::Let,
                 "func" => TokenKind::Func,
                 "return" => TokenKind::Return,
+                "if" => TokenKind::If,
+                "else" => TokenKind::Else,
                 _ => TokenKind::Identifier,
             };
         } else if Self::is_operator_start(&c) {
@@ -273,22 +293,55 @@ impl Lexer {
             '-' => TokenKind::Minus,
             '*' => TokenKind::Astrisk,
             '/' => TokenKind::Slash,
-            '=' => TokenKind::Equal,
-            '|' => TokenKind::BitwiseOR,
-            '&' => TokenKind::BitwiseAND,
+            '=' => {
+                if self.current_char().unwrap() == '=' {
+                    return TokenKind::EqualTo;
+                }
+                TokenKind::Equal
+            }
+            '|' => {
+                if self.current_char().unwrap() == '=' {
+                    return TokenKind::LogicOR;
+                }
+                TokenKind::BitwiseOR
+            }
+            '&' => {
+                if self.current_char().unwrap() == '=' {
+                    return TokenKind::LogicAND;
+                }
+                TokenKind::BitwiseAND
+            }
             '^' => TokenKind::BitwiseXOR,
             '~' => TokenKind::BitwiseNOT,
-            '!' => TokenKind::ExclemationMark,
+            '!' => {
+                if self.current_char().unwrap() == '=' {
+                    return TokenKind::NotEqualTo;
+                }
+                TokenKind::ExclemationMark
+            }
             '(' => TokenKind::LeftParen,
             ')' => TokenKind::RightParen,
             '[' => TokenKind::LeftBracket,
             ']' => TokenKind::RightBracket,
-            '<' => TokenKind::LeftAngleBracket,
-            '>' => TokenKind::RightAngleBracket,
+            '<' => {
+                if self.current_char().unwrap() == '=' {
+                    return TokenKind::LessThanOrEqual;
+                }
+                TokenKind::LessThan
+                // TokenKind::LeftAngleBracket
+            }
+            '>' => {
+                if self.current_char().unwrap() == '=' {
+                    return TokenKind::GreaterThanOrEqual;
+                }
+                TokenKind::GreaterThan
+                // TokenKind::RightAngleBracket
+            }
             '{' => TokenKind::LeftBrace,
             '}' => TokenKind::RightBrace,
             ',' => TokenKind::Comma,
             ';' => TokenKind::SemiColon,
+            ':' => TokenKind::Colon,
             _ => TokenKind::Bad,
         }
     }

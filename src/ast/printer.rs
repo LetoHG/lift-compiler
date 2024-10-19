@@ -113,22 +113,8 @@ impl ASTVisitor for ASTTreePrinter {
         self.increase_indentation();
 
         if let super::ASTStatementKind::CompoundStatement(statement) = &function.body.kind {
-            for statement in statement.statements.iter() {
-                self.visit_statement(statement);
-            }
+            self.visit_compound_statement(statement);
         }
-        // match &function.body.kind {
-        //     super::ASTStatementKind::CompoundStatement(statement) => {
-        //         for statement in statement.statements.iter() {
-        //             self.visit_statement(statement);
-        //             // ASTVisitor::do_visit_statement(self, &statement);
-        //         }
-        //     }
-        //     _ => todo!(),
-        // };
-        // for statement in function.body.iter() {
-        //     ASTVisitor::do_visit_statement(self, &statement);
-        // }
         self.decrease_indentation();
     }
 
@@ -193,18 +179,27 @@ impl ASTVisitor for ASTTreePrinter {
     }
 
     fn visit_binary_operator(&mut self, op: &super::ASTBinaryOperator) {
-        self.print(
-            &format!(
-                "Operator: {}",
-                match op.kind {
-                    super::ASTBinaryOperatorKind::Plus => '+',
-                    super::ASTBinaryOperatorKind::Minus => '-',
-                    super::ASTBinaryOperatorKind::Multiply => '*',
-                    super::ASTBinaryOperatorKind::Divide => '/',
-                }
-            ),
-            &color::Yellow,
+        let var_name = format!(
+            "Operator: {}",
+            match op.kind {
+                super::ASTBinaryOperatorKind::Plus => "+",
+                super::ASTBinaryOperatorKind::Minus => "-",
+                super::ASTBinaryOperatorKind::Multiply => "*",
+                super::ASTBinaryOperatorKind::Divide => "/",
+                super::ASTBinaryOperatorKind::EqualTo => "==",
+                super::ASTBinaryOperatorKind::NotEqualTo => "!=",
+                super::ASTBinaryOperatorKind::LogicAND => "&&",
+                super::ASTBinaryOperatorKind::LogicOR => "||",
+                super::ASTBinaryOperatorKind::GreaterThan => ">",
+                super::ASTBinaryOperatorKind::GreaterThanOrEqual => ">=",
+                super::ASTBinaryOperatorKind::LessThan => "<",
+                super::ASTBinaryOperatorKind::LessThanOrEqual => "<=",
+                super::ASTBinaryOperatorKind::BitwiseOR => "|",
+                super::ASTBinaryOperatorKind::BitwiseAND => "&",
+                super::ASTBinaryOperatorKind::BitwiseXOR => "^",
+            }
         );
+        self.print(&var_name, &color::Yellow);
     }
 
     fn visit_parenthesised_expression(&mut self, expr: &super::ASTParenthesizedExpression) {
@@ -216,7 +211,7 @@ impl ASTVisitor for ASTTreePrinter {
             &color::Magenta,
         );
         self.increase_indentation();
-        ASTVisitor::do_visit_expression(self, &expr.expr);
+        self.visit_expression(&expr.expr);
     }
 
     fn visit_variable_expression(&mut self, expr: &super::ASTVariableExpression) {
@@ -235,6 +230,17 @@ impl ASTVisitor for ASTTreePrinter {
 
     fn visit_float(&mut self, float: &f64) {
         self.print(&format!("Float: {}", float), &Self::TEXT_COLOR);
+    }
+
+    fn visit_conditional_statement(&mut self, statement: &super::ASTConditionalStatement) {
+        self.print(&format!("If:"), &color::Blue);
+        self.increase_indentation();
+        self.visit_expression(&statement.codition);
+        self.increase_indentation();
+        self.visit_statement(&statement.then_branch);
+        if let Some(else_branch) = &statement.else_branch {
+            self.visit_statement(&else_branch.else_branch);
+        }
     }
 }
 
@@ -319,6 +325,40 @@ impl ASTVisitor for ASTHiglightPrinter {
         self.add_newline();
     }
 
+    fn visit_compound_statement(&mut self, statement: &super::ASTCompoundStatement) {
+        self.print(&format!("{}{}", Fg(Self::TEXT_COLOR), '{'));
+        self.add_newline();
+        self.increase_indentation();
+        for statement in statement.statements.iter() {
+            self.visit_statement(statement);
+        }
+        self.add_newline();
+        self.decrease_indentation();
+        self.print_indent();
+        self.print(&format!("{}{}", Fg(Self::TEXT_COLOR), '}'));
+    }
+
+    fn visit_conditional_statement(&mut self, statement: &super::ASTConditionalStatement) {
+        self.print(&format!(
+            "{}if {}",
+            Fg(Self::FUNC_COLOR),
+            Fg(Self::TEXT_COLOR),
+        ));
+        self.visit_expression(&statement.codition);
+        // self.increase_indentation();
+        // self.increase_indentation();
+        self.visit_statement(&statement.then_branch);
+        if let Some(else_branch) = &statement.else_branch {
+            self.print(&format!(
+                "{}else{} ",
+                Fg(Self::FUNC_COLOR),
+                Fg(Self::TEXT_COLOR),
+            ));
+            self.visit_statement(&else_branch.else_branch);
+        }
+        self.add_newline();
+    }
+
     fn visit_funtion_statement(&mut self, function: &super::ASTFunctionStatement) {
         self.print(&format!(
             "{}func {}{}{}(",
@@ -339,19 +379,10 @@ impl ASTVisitor for ASTHiglightPrinter {
             ));
         }
 
-        self.print(&format!("{}) {}", Fg(Self::TEXT_COLOR), '{'));
-        self.add_newline();
-
+        self.print(&format!("{}) ", Fg(Self::TEXT_COLOR)));
         if let super::ASTStatementKind::CompoundStatement(statement) = &function.body.kind {
-            self.increase_indentation();
-            for statement in statement.statements.iter() {
-                self.visit_statement(statement);
-            }
-            self.decrease_indentation();
+            self.visit_compound_statement(statement);
         }
-
-        self.add_newline();
-        self.print(&format!("{}{}", Fg(Self::TEXT_COLOR), '}'));
         self.add_newline();
     }
 
@@ -421,10 +452,21 @@ impl ASTVisitor for ASTHiglightPrinter {
             "{}{}",
             Fg(Self::TEXT_COLOR),
             match op.kind {
-                super::ASTBinaryOperatorKind::Plus => '+',
-                super::ASTBinaryOperatorKind::Minus => '-',
-                super::ASTBinaryOperatorKind::Multiply => '*',
-                super::ASTBinaryOperatorKind::Divide => '/',
+                super::ASTBinaryOperatorKind::Plus => "+",
+                super::ASTBinaryOperatorKind::Minus => "-",
+                super::ASTBinaryOperatorKind::Multiply => "*",
+                super::ASTBinaryOperatorKind::Divide => "/",
+                super::ASTBinaryOperatorKind::EqualTo => "==",
+                super::ASTBinaryOperatorKind::NotEqualTo => "!=",
+                super::ASTBinaryOperatorKind::LogicAND => "&&",
+                super::ASTBinaryOperatorKind::LogicOR => "||",
+                super::ASTBinaryOperatorKind::GreaterThan => ">",
+                super::ASTBinaryOperatorKind::GreaterThanOrEqual => ">=",
+                super::ASTBinaryOperatorKind::LessThan => "<",
+                super::ASTBinaryOperatorKind::LessThanOrEqual => "<=",
+                super::ASTBinaryOperatorKind::BitwiseOR => "|",
+                super::ASTBinaryOperatorKind::BitwiseAND => "&",
+                super::ASTBinaryOperatorKind::BitwiseXOR => "^",
             }
         ));
     }

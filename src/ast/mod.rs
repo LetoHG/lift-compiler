@@ -47,6 +47,9 @@ pub trait ASTVisitor {
             ASTStatementKind::CompoundStatement(statement) => {
                 self.visit_compound_statement(statement)
             }
+            ASTStatementKind::ConditionalStatement(statement) => {
+                self.visit_conditional_statement(statement)
+            }
         }
     }
 
@@ -69,29 +72,16 @@ pub trait ASTVisitor {
     }
     fn visit_return_statement(&mut self, statement: &ASTReturnStatement);
     fn visit_let_statement(&mut self, statement: &ASTLetStatement);
-    fn visit_compound_statement(&mut self, statement: &ASTCompoundStatement) {}
-    fn visit_funtion_statement(&mut self, function: &ASTFunctionStatement) {
-        // for arg in function.arguments.iter() {
-        //     self.visit_expression(arg);
-        // }
-
-        if let ASTStatementKind::CompoundStatement(statement) = &function.body.kind {
-            for statement in statement.statements.iter() {
-                self.visit_statement(statement);
-            }
+    fn visit_compound_statement(&mut self, statement: &ASTCompoundStatement) {
+        for statement in statement.statements.iter() {
+            self.visit_statement(statement);
         }
-
-        // match &function.body.kind {
-        //     ASTStatementKind::CompoundStatement(statement) => {
-        //         for statement in statement.statements.iter() {
-        //             self.visit_statement(statement);
-        //         }
-        //     }
-        //     _ => todo!(),
-        // };
-        // for statement in function.body.iter() {
-        //     self.visit_statement(statement);
-        // }
+    }
+    fn visit_conditional_statement(&mut self, statement: &ASTConditionalStatement);
+    fn visit_funtion_statement(&mut self, function: &ASTFunctionStatement) {
+        if let ASTStatementKind::CompoundStatement(statement) = &function.body.kind {
+            self.visit_compound_statement(statement);
+        }
     }
 
     fn visit_function_call_expression(&mut self, expr: &ASTFunctionCallExpression);
@@ -119,6 +109,7 @@ enum ASTStatementKind {
     ReturnStatement(ASTReturnStatement),
     CompoundStatement(ASTCompoundStatement),
     FunctionStatement(ASTFunctionStatement),
+    ConditionalStatement(ASTConditionalStatement),
 }
 
 #[derive(Clone)]
@@ -146,6 +137,19 @@ pub struct ASTFunctionStatement {
     identifier: Token,
     arguments: Vec<FunctionArgumentDeclaration>,
     body: Box<ASTStatement>,
+}
+
+#[derive(Clone)]
+pub struct ASTElseStatement {
+    else_keyword: Token,
+    else_branch: Box<ASTStatement>,
+}
+#[derive(Clone)]
+pub struct ASTConditionalStatement {
+    keyword: Token,
+    codition: ASTExpression,
+    then_branch: Box<ASTStatement>,
+    else_branch: Option<ASTElseStatement>,
 }
 
 #[derive(Clone)]
@@ -184,6 +188,22 @@ impl ASTStatement {
         }
     }
 
+    fn conditional(
+        if_token: Token,
+        codition: ASTExpression,
+        then_branch: ASTStatement,
+        else_branch: Option<ASTElseStatement>,
+    ) -> Self {
+        Self {
+            kind: ASTStatementKind::ConditionalStatement(ASTConditionalStatement {
+                keyword: if_token,
+                codition,
+                then_branch: Box::new(then_branch),
+                else_branch,
+            }),
+        }
+    }
+
     fn function(
         identifier: Token,
         arguments: Vec<FunctionArgumentDeclaration>,
@@ -199,7 +219,7 @@ impl ASTStatement {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 enum ASTExpressionKind {
     IntegerLiteral(i64),
     FloatingLiteral(f64),
@@ -212,7 +232,7 @@ enum ASTExpressionKind {
     Error(TextSpan),
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct ASTExpression {
     kind: ASTExpressionKind,
 }
@@ -281,32 +301,44 @@ impl ASTExpression {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 enum ASTUnaryOperatorKind {
+    Minus,
     BitwiseNOT,
     LogicNot,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 struct ASTUnaryOperator {
     kind: ASTUnaryOperatorKind,
     token: lexer::Token,
 }
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct ASTUnaryExpression {
     operator: ASTUnaryOperator,
     expr: Box<ASTExpression>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 enum ASTBinaryOperatorKind {
     Plus,
     Minus,
     Multiply,
     Divide,
+    EqualTo,
+    NotEqualTo,
+    LogicAND,
+    LogicOR,
+    GreaterThan,
+    GreaterThanOrEqual,
+    LessThan,
+    LessThanOrEqual,
+    BitwiseOR,
+    BitwiseAND,
+    BitwiseXOR,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ASTBinaryOperator {
     kind: ASTBinaryOperatorKind,
     token: lexer::Token,
@@ -315,27 +347,38 @@ pub struct ASTBinaryOperator {
 impl ASTBinaryOperator {
     fn precedence(&self) -> u8 {
         match self.kind {
-            ASTBinaryOperatorKind::Plus => 1,
-            ASTBinaryOperatorKind::Minus => 1,
-            ASTBinaryOperatorKind::Multiply => 2,
-            ASTBinaryOperatorKind::Divide => 2,
+            ASTBinaryOperatorKind::Plus => 5,
+            ASTBinaryOperatorKind::Minus => 5,
+            ASTBinaryOperatorKind::Multiply => 6,
+            ASTBinaryOperatorKind::Divide => 6,
+            ASTBinaryOperatorKind::EqualTo => 1,
+            ASTBinaryOperatorKind::NotEqualTo => 1,
+            ASTBinaryOperatorKind::LogicAND => 1,
+            ASTBinaryOperatorKind::LogicOR => 1,
+            ASTBinaryOperatorKind::GreaterThan => 1,
+            ASTBinaryOperatorKind::GreaterThanOrEqual => 1,
+            ASTBinaryOperatorKind::LessThan => 1,
+            ASTBinaryOperatorKind::LessThanOrEqual => 1,
+            ASTBinaryOperatorKind::BitwiseOR => 1,
+            ASTBinaryOperatorKind::BitwiseAND => 1,
+            ASTBinaryOperatorKind::BitwiseXOR => 1,
         }
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct ASTBinaryExpression {
     operator: ASTBinaryOperator,
     left: Box<ASTExpression>,
     right: Box<ASTExpression>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct ASTParenthesizedExpression {
     expr: Box<ASTExpression>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct ASTVariableExpression {
     identifier: Token,
 }
@@ -346,7 +389,7 @@ impl ASTVariableExpression {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct ASTFunctionCallExpression {
     identifier: Token,
     arguments: Vec<ASTExpression>,
@@ -360,9 +403,8 @@ impl ASTFunctionCallExpression {
 
 #[cfg(test)]
 mod test {
-    use crate::compilation_unit::{self, CompilationUnit};
+    use crate::compilation_unit::CompilationUnit;
 
-    use super::lexer::Token;
     use super::lexer::TokenKind;
     use super::ASTVisitor;
     use super::Ast;
@@ -376,6 +418,7 @@ mod test {
         ReturnStatement,
         FunctionStatement(Vec<String>),
         BinaryExpr(TokenKind),
+        UnaryExpr(TokenKind),
         ParenExpr,
         FunctionCall(String),
     }
@@ -440,25 +483,16 @@ mod test {
             let mut args = Vec::new();
             args.push(function.identifier.span.literal.clone());
             for arg in function.arguments.iter() {
-                match &arg.kind {
-                    super::ASTExpressionKind::Variable(variable) => {
-                        args.push(variable.identifier().to_string());
-                    }
-                    _ => (),
-                }
+                args.push(arg.identifier.span.literal.clone());
             }
 
             self.actual.push(TestASTNode::FunctionStatement(args));
 
             if let super::ASTStatementKind::CompoundStatement(statement) = &function.body.kind {
-                for statement in statement.statements.iter() {
-                    self.visit_statement(statement);
-                }
+                self.visit_compound_statement(statement);
             }
-            // for statement in function.body.iter() {
-            //     self.visit_statement(statement);
-            // }
         }
+
         fn visit_function_call_expression(&mut self, expr: &super::ASTFunctionCallExpression) {
             self.actual.push(TestASTNode::FunctionCall(
                 expr.identifier.span.literal.clone(),
@@ -493,6 +527,11 @@ mod test {
 
         fn visit_float(&mut self, float: &f64) {
             self.actual.push(TestASTNode::Floating(float.clone()));
+        }
+
+        fn visit_unary_expression(&mut self, expr: &super::ASTUnaryExpression) {
+            self.actual
+                .push(TestASTNode::UnaryExpr(expr.operator.token.kind.clone()));
         }
     }
 

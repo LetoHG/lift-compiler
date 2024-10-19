@@ -2,8 +2,8 @@ use std::fmt::Arguments;
 use std::{collections::HashMap, ops::Not};
 
 use super::{
-    ASTBinaryOperator, ASTBinaryOperatorKind, ASTFunctionStatement, ASTReturnStatement,
-    ASTStatementKind, ASTVisitor,
+    ASTBinaryOperator, ASTBinaryOperatorKind, ASTExpressionKind, ASTFunctionStatement,
+    ASTReturnStatement, ASTStatementKind, ASTVisitor,
 };
 
 type Scope = HashMap<String, f64>;
@@ -71,6 +71,17 @@ impl ASTVisitor for ASTSolver {
         self.add_identifier_to_scope(&statement.identifier.span.literal, self.result.unwrap());
     }
 
+    fn visit_conditional_statement(&mut self, statement: &super::ASTConditionalStatement) {
+        self.visit_expression(&statement.codition);
+        let condition = self.result.unwrap();
+
+        if condition != 0.0 {
+            self.visit_statement(&statement.then_branch);
+        } else if let Some(else_branch) = &statement.else_branch {
+            self.visit_statement(&else_branch.else_branch);
+        }
+    }
+
     fn visit_funtion_statement(&mut self, function: &super::ASTFunctionStatement) {
         self.functions
             .insert(function.identifier.span.literal.clone(), function.clone());
@@ -98,23 +109,13 @@ impl ASTVisitor for ASTSolver {
         }
         self.enter_scope(arguments);
 
+        // todo: that check should be done before
         if let super::ASTStatementKind::CompoundStatement(statement) = &func.body.kind {
             for statement in statement.statements.iter() {
                 self.visit_statement(statement);
             }
         }
-        // match &func.body.kind {
-        //     super::ASTStatementKind::CompoundStatement(statement) => {
-        //         for statement in statement.statements.iter() {
-        //             self.visit_statement(statement);
-        //         }
-        //     }
-        //     _ => todo!(),
-        // };
 
-        // for statement in func.body.iter() {
-        //     self.visit_statement(&statement);
-        // }
         self.leave_scope();
     }
 
@@ -128,6 +129,7 @@ impl ASTVisitor for ASTSolver {
         self.result = Some(match expr.operator.kind {
             super::ASTUnaryOperatorKind::BitwiseNOT => (self.result.unwrap() as i64).not() as f64,
             super::ASTUnaryOperatorKind::LogicNot => ((self.result.unwrap() == 0.0) as i64) as f64,
+            super::ASTUnaryOperatorKind::Minus => self.result.unwrap() * -1.0,
         });
     }
     fn visit_binary_expression(&mut self, expr: &super::ASTBinaryExpression) {
@@ -140,6 +142,17 @@ impl ASTVisitor for ASTSolver {
             ASTBinaryOperatorKind::Minus => left - right,
             ASTBinaryOperatorKind::Multiply => left * right,
             ASTBinaryOperatorKind::Divide => left / right,
+            ASTBinaryOperatorKind::EqualTo => (left == right) as i64 as f64,
+            ASTBinaryOperatorKind::NotEqualTo => (left != right) as i64 as f64,
+            ASTBinaryOperatorKind::LogicAND => ((left != 0.0) && (right != 0.0)) as i64 as f64,
+            ASTBinaryOperatorKind::LogicOR => ((left != 0.0) || (right != 0.0)) as i64 as f64,
+            ASTBinaryOperatorKind::GreaterThan => (left > right) as i64 as f64,
+            ASTBinaryOperatorKind::GreaterThanOrEqual => (left >= right) as i64 as f64,
+            ASTBinaryOperatorKind::LessThan => (left < right) as i64 as f64,
+            ASTBinaryOperatorKind::LessThanOrEqual => (left <= right) as i64 as f64,
+            ASTBinaryOperatorKind::BitwiseOR => ((left as i64) | (right as i64)) as f64,
+            ASTBinaryOperatorKind::BitwiseAND => ((left as i64) & (right as i64)) as f64,
+            ASTBinaryOperatorKind::BitwiseXOR => ((left as i64) ^ (right as i64)) as f64,
         })
     }
 

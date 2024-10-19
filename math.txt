@@ -1,5 +1,8 @@
 func add(arg1, arg2) {
+  if (arg1 > 7) {
+    return arg1
+  }
   return arg1 + arg2
 }
 
-return add(7, 5) + add(71, 5)
+return add(7, 5)

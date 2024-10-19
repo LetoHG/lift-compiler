@@ -59,6 +59,21 @@ impl ASTVisitor for SymbolChecker {
         self.visit_expression(&statement.initializer);
     }
 
+    fn visit_compound_statement(&mut self, statement: &super::ASTCompoundStatement) {
+        self.enter_scope(Vec::new());
+        for statement in statement.statements.iter() {
+            self.visit_statement(statement);
+        }
+        self.leave_scope();
+    }
+
+    fn visit_conditional_statement(&mut self, statement: &super::ASTConditionalStatement) {
+        self.visit_statement(&statement.then_branch);
+        if let Some(else_branch) = &statement.else_branch {
+            self.visit_statement(&else_branch.else_branch);
+        }
+    }
+
     fn visit_funtion_statement(&mut self, function: &super::ASTFunctionStatement) {
         self.add_identifier_to_scope(&function.identifier.span.literal);
 
@@ -75,14 +90,15 @@ impl ASTVisitor for SymbolChecker {
         // arguments_names.push(function.identifier.span.literal.clone());
         self.enter_scope(arguments_names);
 
-        match &function.body.kind {
-            super::ASTStatementKind::CompoundStatement(statement) => {
-                for statement in statement.statements.iter() {
-                    self.visit_statement(statement);
-                }
-            }
-            _ => todo!(),
-        };
+        self.visit_statement(&function.body);
+        // match &function.body.kind {
+        //     super::ASTStatementKind::CompoundStatement(statement) => {
+        //         for statement in statement.statements.iter() {
+        //             self.visit_statement(statement);
+        //         }
+        //     }
+        //     _ => todo!(),
+        // };
         self.leave_scope();
     }
 
