@@ -3,6 +3,8 @@ mod compilation_unit;
 mod diagnostics;
 mod source_text;
 
+use std::fs;
+
 use crate::compilation_unit::CompilationUnit;
 
 fn main() -> Result<(), ()> {
@@ -15,7 +17,10 @@ func a(arg1, arg2) {
 
 return a(0x02, 7.67)
 ";
-    let compilation_unit = CompilationUnit::compile(input)?;
+
+    let content = fs::read_to_string("math.txt").unwrap();
+
+    let compilation_unit = CompilationUnit::compile(content.as_str())?;
     compilation_unit.run();
     Ok(())
 }

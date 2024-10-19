@@ -92,18 +92,29 @@ impl ASTVisitor for ASTSolver {
         // arguments.push(expr.identifier.span.literal.clone());
         for (arg_expr, func_arg) in expr.arguments.iter().zip(func.arguments.iter()) {
             self.visit_expression(&arg_expr);
-            let arg_name = match &func_arg.kind {
-                super::ASTExpressionKind::Variable(variable) => {
-                    variable.identifier.span.literal.clone()
-                }
-                _ => todo!(),
-            };
+            let arg_name = func_arg.identifier.span.literal.clone();
+
             arguments.insert(arg_name, self.result.unwrap());
         }
         self.enter_scope(arguments);
-        for statement in func.body.iter() {
-            self.visit_statement(&statement);
+
+        if let super::ASTStatementKind::CompoundStatement(statement) = &func.body.kind {
+            for statement in statement.statements.iter() {
+                self.visit_statement(statement);
+            }
         }
+        // match &func.body.kind {
+        //     super::ASTStatementKind::CompoundStatement(statement) => {
+        //         for statement in statement.statements.iter() {
+        //             self.visit_statement(statement);
+        //         }
+        //     }
+        //     _ => todo!(),
+        // };
+
+        // for statement in func.body.iter() {
+        //     self.visit_statement(&statement);
+        // }
         self.leave_scope();
     }
 

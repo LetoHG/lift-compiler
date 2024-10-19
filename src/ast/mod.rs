@@ -44,6 +44,9 @@ pub trait ASTVisitor {
                 self.visit_funtion_statement(statement)
             }
             ASTStatementKind::LetStatement(statement) => self.visit_let_statement(statement),
+            ASTStatementKind::CompoundStatement(statement) => {
+                self.visit_compound_statement(statement)
+            }
         }
     }
 
@@ -66,13 +69,29 @@ pub trait ASTVisitor {
     }
     fn visit_return_statement(&mut self, statement: &ASTReturnStatement);
     fn visit_let_statement(&mut self, statement: &ASTLetStatement);
+    fn visit_compound_statement(&mut self, statement: &ASTCompoundStatement) {}
     fn visit_funtion_statement(&mut self, function: &ASTFunctionStatement) {
-        for arg in function.arguments.iter() {
-            self.visit_expression(arg);
+        // for arg in function.arguments.iter() {
+        //     self.visit_expression(arg);
+        // }
+
+        if let ASTStatementKind::CompoundStatement(statement) = &function.body.kind {
+            for statement in statement.statements.iter() {
+                self.visit_statement(statement);
+            }
         }
-        for statement in function.body.iter() {
-            self.visit_statement(statement);
-        }
+
+        // match &function.body.kind {
+        //     ASTStatementKind::CompoundStatement(statement) => {
+        //         for statement in statement.statements.iter() {
+        //             self.visit_statement(statement);
+        //         }
+        //     }
+        //     _ => todo!(),
+        // };
+        // for statement in function.body.iter() {
+        //     self.visit_statement(statement);
+        // }
     }
 
     fn visit_function_call_expression(&mut self, expr: &ASTFunctionCallExpression);
@@ -98,6 +117,7 @@ enum ASTStatementKind {
     Expression(ASTExpression),
     LetStatement(ASTLetStatement),
     ReturnStatement(ASTReturnStatement),
+    CompoundStatement(ASTCompoundStatement),
     FunctionStatement(ASTFunctionStatement),
 }
 
@@ -112,10 +132,20 @@ pub struct ASTReturnStatement {
     expr: ASTExpression,
 }
 #[derive(Clone)]
+pub struct ASTCompoundStatement {
+    statements: Vec<ASTStatement>,
+}
+
+#[derive(Clone)]
+pub struct FunctionArgumentDeclaration {
+    identifier: Token,
+}
+
+#[derive(Clone)]
 pub struct ASTFunctionStatement {
     identifier: Token,
-    arguments: Vec<ASTExpression>,
-    body: Vec<ASTStatement>,
+    arguments: Vec<FunctionArgumentDeclaration>,
+    body: Box<ASTStatement>,
 }
 
 #[derive(Clone)]
@@ -142,18 +172,28 @@ impl ASTStatement {
     fn let_statement(identifier: Token, initializer: ASTExpression) -> Self {
         Self {
             kind: ASTStatementKind::LetStatement(ASTLetStatement {
-                identifier: identifier,
+                identifier,
                 initializer,
             }),
         }
     }
 
-    fn function(identifier: Token, arguments: Vec<ASTExpression>, body: Vec<ASTStatement>) -> Self {
+    fn compound(statements: Vec<ASTStatement>) -> Self {
+        Self {
+            kind: ASTStatementKind::CompoundStatement(ASTCompoundStatement { statements }),
+        }
+    }
+
+    fn function(
+        identifier: Token,
+        arguments: Vec<FunctionArgumentDeclaration>,
+        body: ASTStatement,
+    ) -> Self {
         Self {
             kind: ASTStatementKind::FunctionStatement(ASTFunctionStatement {
-                identifier: identifier,
+                identifier,
                 arguments,
-                body,
+                body: Box::new(body),
             }),
         }
     }
@@ -410,9 +450,14 @@ mod test {
 
             self.actual.push(TestASTNode::FunctionStatement(args));
 
-            for statement in function.body.iter() {
-                self.visit_statement(statement);
+            if let super::ASTStatementKind::CompoundStatement(statement) = &function.body.kind {
+                for statement in statement.statements.iter() {
+                    self.visit_statement(statement);
+                }
             }
+            // for statement in function.body.iter() {
+            //     self.visit_statement(statement);
+            // }
         }
         fn visit_function_call_expression(&mut self, expr: &super::ASTFunctionCallExpression) {
             self.actual.push(TestASTNode::FunctionCall(

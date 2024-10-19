@@ -1,1 +1,5 @@
-let a = 1 + (2 - 5) * (7 + 5) / (7.1546)
+func add(arg1, arg2) {
+  return arg1 + arg2
+}
+
+return add(7, 5) + add(71, 5)

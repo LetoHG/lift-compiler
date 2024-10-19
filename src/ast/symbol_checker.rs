@@ -65,16 +65,7 @@ impl ASTVisitor for SymbolChecker {
         let mut arguments_names: Vec<String> = Vec::new();
         // add arguments to scope of local variable call
         for arg in function.arguments.iter() {
-            match &arg.kind {
-                super::ASTExpressionKind::Variable(variable) => {
-                    arguments_names.push(variable.identifier().to_string());
-                }
-                _ => {
-                    // self.diagnostics
-                    //     .borrow_mut()
-                    // .report_expected_parameter_definition();
-                }
-            }
+            arguments_names.push(arg.identifier.span.literal.clone());
         }
         self.functions.insert(
             function.identifier.span.literal.clone(),
@@ -83,9 +74,15 @@ impl ASTVisitor for SymbolChecker {
 
         // arguments_names.push(function.identifier.span.literal.clone());
         self.enter_scope(arguments_names);
-        for statement in function.body.iter() {
-            self.visit_statement(&statement);
-        }
+
+        match &function.body.kind {
+            super::ASTStatementKind::CompoundStatement(statement) => {
+                for statement in statement.statements.iter() {
+                    self.visit_statement(statement);
+                }
+            }
+            _ => todo!(),
+        };
         self.leave_scope();
     }
 

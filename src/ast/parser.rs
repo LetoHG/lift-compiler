@@ -10,7 +10,7 @@ use std::{
 
 use super::{
     ASTBinaryExpression, ASTBinaryOperator, ASTBinaryOperatorKind, ASTExpressionKind,
-    ASTFunctionCallExpression,
+    ASTFunctionCallExpression, FunctionArgumentDeclaration,
 };
 
 struct Cursor {
@@ -85,6 +85,7 @@ impl Parser {
             TokenKind::Let => self.parse_let_statement(),
             TokenKind::Return => self.parse_return_statement(),
             TokenKind::Func => self.parse_function_statement(),
+            TokenKind::LeftBrace => self.parse_compound_statement(),
             _ => self.parse_expression_statement(),
         }
     }
@@ -130,19 +131,67 @@ impl Parser {
         ASTStatement::let_statement(identifier, expr)
     }
 
+    fn parse_compound_statement(&mut self) -> ASTStatement {
+        self.consume_expected(TokenKind::LeftBrace);
+        let mut statements: Vec<ASTStatement> = Vec::new();
+        while self.current_token().kind != TokenKind::RightBrace {
+            statements.push(self.parse_statement());
+        }
+        self.consume_expected(TokenKind::RightBrace);
+        ASTStatement::compound(statements)
+    }
     fn parse_function_statement(&mut self) -> ASTStatement {
         self.consume_expected(TokenKind::Func);
         let identifier = self.consume_expected(TokenKind::Identifier).clone();
         self.consume_expected(TokenKind::LeftParen);
-        let args = self.parse_arguments_list();
-        self.consume_expected(TokenKind::RightParen);
-        self.consume_expected(TokenKind::LeftBrace);
-        let mut body: Vec<ASTStatement> = Vec::new();
-        while self.current_token().kind != TokenKind::RightBrace {
-            body.push(self.parse_statement());
+
+        if self.current_token().kind == TokenKind::Comma {
+            self.diagnostics_colletion
+                .borrow_mut()
+                .report_unexpected_token(&TokenKind::Identifier, self.peek(1));
+            self.consume();
         }
-        self.consume_expected(TokenKind::RightBrace);
-        ASTStatement::function(identifier, args, body)
+
+        let mut arguments: Vec<FunctionArgumentDeclaration> = Vec::new();
+        while self.current_token().kind != TokenKind::RightParen {
+            if self.current_token().kind == TokenKind::Comma {
+                self.diagnostics_colletion
+                    .borrow_mut()
+                    .report_unexpected_token(&TokenKind::Identifier, self.current_token());
+                self.consume();
+            }
+
+            if self.current_token().kind == TokenKind::Identifier {
+                arguments.push(FunctionArgumentDeclaration {
+                    identifier: self.consume().clone(),
+                });
+            } else {
+                self.diagnostics_colletion
+                    .borrow_mut()
+                    .report_unexpected_token(&TokenKind::Identifier, self.current_token());
+            }
+
+            if self.current_token().kind == TokenKind::Comma
+                && self.peek(1).kind == TokenKind::RightParen
+            {
+                self.consume_expected(TokenKind::RightParen);
+                break;
+            } else if self.current_token().kind == TokenKind::Comma {
+                self.consume(); // Consume comma if present
+            }
+        }
+
+        self.consume_expected(TokenKind::RightParen);
+
+        // self.consume_expected(TokenKind::LeftBrace);
+        let body = self.parse_compound_statement();
+        // let mut body: Vec<ASTStatement> = Vec::new();
+        // while self.current_token().kind != TokenKind::RightBrace {
+        //     body.push(self.parse_statement());
+        // }
+        // self.consume_expected(TokenKind::RightBrace);
+
+        ASTStatement::function(identifier, arguments, body)
     }
 
     fn parse_expression_statement(&mut self) -> ASTStatement {

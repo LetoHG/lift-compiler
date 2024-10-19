@@ -96,16 +96,39 @@ impl ASTVisitor for ASTTreePrinter {
         self.increase_indentation();
         self.print(&format!("Arguments:"), &Self::TEXT_COLOR);
         self.increase_indentation();
-        for expr in function.arguments.iter() {
-            ASTVisitor::do_visit_expression(self, &expr);
+        for arg in function.arguments.iter() {
+            self.print(
+                &format!(
+                    "{}  Argument: {}{}",
+                    Self::FUNC_STATEMENT_ICON,
+                    color::Fg(Self::TEXT_COLOR),
+                    &arg.identifier.span.literal
+                ),
+                &Self::TEXT_COLOR,
+            );
         }
         self.decrease_indentation();
 
         self.print(&format!("Body:"), &Self::TEXT_COLOR);
         self.increase_indentation();
-        for statement in function.body.iter() {
-            ASTVisitor::do_visit_statement(self, &statement);
+
+        if let super::ASTStatementKind::CompoundStatement(statement) = &function.body.kind {
+            for statement in statement.statements.iter() {
+                self.visit_statement(statement);
+            }
         }
+        // match &function.body.kind {
+        //     super::ASTStatementKind::CompoundStatement(statement) => {
+        //         for statement in statement.statements.iter() {
+        //             self.visit_statement(statement);
+        //             // ASTVisitor::do_visit_statement(self, &statement);
+        //         }
+        //     }
+        //     _ => todo!(),
+        // };
+        // for statement in function.body.iter() {
+        //     ASTVisitor::do_visit_statement(self, &statement);
+        // }
         self.decrease_indentation();
     }
 
@@ -257,13 +280,16 @@ impl ASTHiglightPrinter {
         self.indent -= Self::INDENATION;
     }
 
-    fn print(&mut self, text: &str) {
+    fn print_indent(&mut self) {
         self.result.push_str(&format!(
-            "{}{}{}",
+            "{}{}",
             " ".repeat(self.indent),
-            text,
             color::Fg(color::Reset)
         ));
+    }
+    fn print(&mut self, text: &str) {
+        self.result
+            .push_str(&format!("{}{}", text, color::Fg(color::Reset)));
     }
 
     fn visit_idenifier(&mut self, identifier: &String) {
@@ -272,6 +298,10 @@ impl ASTHiglightPrinter {
 }
 
 impl ASTVisitor for ASTHiglightPrinter {
+    fn visit_statement(&mut self, statement: &super::ASTStatement) {
+        self.print_indent();
+        self.do_visit_statement(statement);
+    }
     fn visit_return_statement(&mut self, statement: &super::ASTReturnStatement) {
         self.print(&format!("{}return", Fg(Self::LET_COLOR)));
         self.add_whitespace();
@@ -298,19 +328,28 @@ impl ASTVisitor for ASTHiglightPrinter {
             Fg(Self::TEXT_COLOR),
         ));
         for (i, arg) in function.arguments.iter().enumerate() {
-            self.visit_expression(arg);
-            if (i + 1) < function.arguments.len() {
+            if i != 0 {
                 self.print(&format!("{},", Fg(Self::TEXT_COLOR)));
                 self.add_whitespace();
             }
+            self.print(&format!(
+                "{}{}",
+                Fg(Self::TEXT_COLOR),
+                arg.identifier.span.literal
+            ));
         }
 
         self.print(&format!("{}) {}", Fg(Self::TEXT_COLOR), '{'));
         self.add_newline();
-        for statement in function.body.iter() {
-            self.print("  ");
-            self.visit_statement(statement);
+
+        if let super::ASTStatementKind::CompoundStatement(statement) = &function.body.kind {
+            self.increase_indentation();
+            for statement in statement.statements.iter() {
+                self.visit_statement(statement);
+            }
+            self.decrease_indentation();
         }
+
         self.add_newline();
         self.print(&format!("{}{}", Fg(Self::TEXT_COLOR), '}'));
         self.add_newline();
@@ -325,11 +364,11 @@ impl ASTVisitor for ASTHiglightPrinter {
         ));
 
         for (i, arg) in expr.arguments.iter().enumerate() {
-            self.visit_expression(arg);
-            if (i + 1) < expr.arguments.len() {
+            if i != 0 {
                 self.print(&format!("{},", Fg(Self::TEXT_COLOR)));
                 self.add_whitespace();
             }
+            self.visit_expression(arg);
         }
         self.print(&format!("{})", Fg(Self::TEXT_COLOR)));
         self.add_whitespace();
