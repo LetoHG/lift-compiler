@@ -137,6 +137,7 @@ impl Parser {
         self.consume_expected(TokenKind::LeftBrace);
         let mut statements: Vec<ASTStatement> = Vec::new();
         while self.current_token().kind != TokenKind::RightBrace {
+            println!("{:?}", self.current_token());
             statements.push(self.parse_statement());
         }
         self.consume_expected(TokenKind::RightBrace);
@@ -204,7 +205,9 @@ impl Parser {
 
     fn parse_conditional_statement(&mut self) -> ASTStatement {
         let keyword = self.consume_expected(TokenKind::If).clone();
+        self.consume_expected(TokenKind::LeftParen);
         let condition = self.parse_expression();
+        self.consume_expected(TokenKind::RightParen);
         let then_branch = self.parse_statement();
         let else_branch = self.consume_optional_else_statement();
 
@@ -216,8 +219,20 @@ impl Parser {
         ASTStatement::expression(expr)
     }
 
-    fn parse_expression(&mut self) -> ASTExpression {
+    fn parse_assignment_expression(&mut self) -> ASTExpression {
+        if self.current_token().kind == TokenKind::Identifier
+            && self.peek(1).kind == TokenKind::Equal
+        {
+            let var = self.consume().clone();
+            self.consume_expected(TokenKind::Equal);
+            let assignment = self.parse_binary_expression(0);
+            return ASTExpression::assignment(var, assignment);
+        }
         self.parse_binary_expression(0)
+    }
+
+    fn parse_expression(&mut self) -> ASTExpression {
+        self.parse_assignment_expression()
     }
 
     fn parse_arguments_list(&mut self) -> Vec<ASTExpression> {

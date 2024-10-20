@@ -63,6 +63,7 @@ pub trait ASTVisitor {
             ASTExpressionKind::Binary(expr) => self.visit_binary_expression(expr),
             ASTExpressionKind::Parenthesized(expr) => self.visit_parenthesised_expression(expr),
             ASTExpressionKind::FunctionCall(expr) => self.visit_function_call_expression(expr),
+            ASTExpressionKind::Assignment(expr) => self.visit_assignment_expression(expr),
             ASTExpressionKind::Error(span) => self.visit_error(span),
         }
     }
@@ -85,6 +86,7 @@ pub trait ASTVisitor {
     }
 
     fn visit_function_call_expression(&mut self, expr: &ASTFunctionCallExpression);
+    fn visit_assignment_expression(&mut self, expr: &ASTAssignmentExpression) {}
 
     fn visit_expression(&mut self, expr: &ASTExpression) {
         self.do_visit_expression(expr);
@@ -228,6 +230,7 @@ enum ASTExpressionKind {
     Binary(ASTBinaryExpression),
     Parenthesized(ASTParenthesizedExpression),
     Variable(ASTVariableExpression),
+    Assignment(ASTAssignmentExpression),
     FunctionCall(ASTFunctionCallExpression),
     Error(TextSpan),
 }
@@ -261,6 +264,15 @@ impl ASTExpression {
     fn identifier(token: Token) -> Self {
         Self {
             kind: ASTExpressionKind::Variable(ASTVariableExpression { identifier: token }),
+        }
+    }
+
+    fn assignment(token: Token, expr: ASTExpression) -> Self {
+        Self {
+            kind: ASTExpressionKind::Assignment(ASTAssignmentExpression {
+                identifier: token,
+                expr: Box::new(expr),
+            }),
         }
     }
 
@@ -381,6 +393,12 @@ pub struct ASTParenthesizedExpression {
 #[derive(Clone, PartialEq)]
 pub struct ASTVariableExpression {
     identifier: Token,
+}
+
+#[derive(Clone, PartialEq)]
+pub struct ASTAssignmentExpression {
+    identifier: Token,
+    expr: Box<ASTExpression>,
 }
 
 impl ASTVariableExpression {

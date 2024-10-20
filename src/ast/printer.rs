@@ -293,6 +293,14 @@ impl ASTHiglightPrinter {
             color::Fg(color::Reset)
         ));
     }
+    fn print_with_indent(&mut self, text: &str) {
+        self.result.push_str(&format!(
+            "{}{}{}",
+            " ".repeat(self.indent),
+            text,
+            color::Fg(color::Reset)
+        ));
+    }
     fn print(&mut self, text: &str) {
         self.result
             .push_str(&format!("{}{}", text, color::Fg(color::Reset)));
@@ -305,17 +313,16 @@ impl ASTHiglightPrinter {
 
 impl ASTVisitor for ASTHiglightPrinter {
     fn visit_statement(&mut self, statement: &super::ASTStatement) {
-        self.print_indent();
         self.do_visit_statement(statement);
     }
     fn visit_return_statement(&mut self, statement: &super::ASTReturnStatement) {
-        self.print(&format!("{}return", Fg(Self::LET_COLOR)));
+        self.print_with_indent(&format!("{}return", Fg(Self::LET_COLOR)));
         self.add_whitespace();
         self.visit_expression(&statement.expr);
     }
 
     fn visit_let_statement(&mut self, statement: &super::ASTLetStatement) {
-        self.print(&format!("{}let", Fg(Self::LET_COLOR)));
+        self.print_with_indent(&format!("{}let", Fg(Self::LET_COLOR)));
         self.add_whitespace();
         self.visit_idenifier(&statement.identifier.span.literal);
         self.add_whitespace();
@@ -334,23 +341,23 @@ impl ASTVisitor for ASTHiglightPrinter {
         }
         self.add_newline();
         self.decrease_indentation();
-        self.print_indent();
-        self.print(&format!("{}{}", Fg(Self::TEXT_COLOR), '}'));
+        self.print_with_indent(&format!("{}{}", Fg(Self::TEXT_COLOR), '}'));
     }
 
     fn visit_conditional_statement(&mut self, statement: &super::ASTConditionalStatement) {
-        self.print(&format!(
-            "{}if {}",
+        self.print_with_indent(&format!(
+            "{}if{} (",
             Fg(Self::FUNC_COLOR),
             Fg(Self::TEXT_COLOR),
         ));
         self.visit_expression(&statement.codition);
+        self.print(") ");
         // self.increase_indentation();
         // self.increase_indentation();
         self.visit_statement(&statement.then_branch);
         if let Some(else_branch) = &statement.else_branch {
             self.print(&format!(
-                "{}else{} ",
+                "{} else{} ",
                 Fg(Self::FUNC_COLOR),
                 Fg(Self::TEXT_COLOR),
             ));
@@ -360,7 +367,7 @@ impl ASTVisitor for ASTHiglightPrinter {
     }
 
     fn visit_funtion_statement(&mut self, function: &super::ASTFunctionStatement) {
-        self.print(&format!(
+        self.print_with_indent(&format!(
             "{}func {}{}{}(",
             Fg(Self::FUNC_COLOR),
             Fg(Self::FUNC_NAME_COLOR),
@@ -403,6 +410,16 @@ impl ASTVisitor for ASTHiglightPrinter {
         }
         self.print(&format!("{})", Fg(Self::TEXT_COLOR)));
         self.add_whitespace();
+    }
+
+    fn visit_assignment_expression(&mut self, expr: &super::ASTAssignmentExpression) {
+        self.print_with_indent(&format!(
+            "{}{}{} = ",
+            Fg(Self::VARIABLE_COLOR),
+            expr.identifier.span.literal,
+            Fg(Self::TEXT_COLOR)
+        ));
+        self.visit_expression(&expr.expr);
     }
 
     fn visit_variable_expression(&mut self, expr: &super::ASTVariableExpression) {

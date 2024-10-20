@@ -89,6 +89,15 @@ impl ASTVisitor for ASTSolver {
         self.add_identifier_to_scope(&function.identifier.span.literal, 0.0);
     }
 
+    fn visit_assignment_expression(&mut self, expr: &super::ASTAssignmentExpression) {
+        self.visit_expression(&expr.expr);
+        for scope in self.scopes.iter_mut().rev() {
+            if let Some(value) = scope.get_mut(&expr.identifier.span.literal) {
+                *value = self.result.unwrap();
+            }
+        }
+    }
+
     fn visit_function_call_expression(&mut self, expr: &super::ASTFunctionCallExpression) {
         if !self.check_identifier_in_scope(&expr.identifier.span.literal) {}
 

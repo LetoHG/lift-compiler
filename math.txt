@@ -1,8 +1,11 @@
-func add(arg1, arg2) {
-  if (arg1 > 7) {
-    return arg1
+func max(arg1, arg2) {
+  let ret = 0;
+  if (arg1 > arg2) {
+    ret = arg1;
+  } else {
+    ret = arg2;
   }
-  return arg1 + arg2
+  return ret;
 }
 
-return add(7, 5)
+return max(7, 5)
