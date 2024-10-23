@@ -232,15 +232,35 @@ impl ASTVisitor for ASTTreePrinter {
         self.print(&format!("Float: {}", float), &Self::TEXT_COLOR);
     }
 
-    fn visit_conditional_statement(&mut self, statement: &super::ASTConditionalStatement) {
-        self.print(&format!("If:"), &color::Blue);
+    fn visit_assignment_expression(&mut self, expr: &super::ASTAssignmentExpression) {
+        self.print("Assignment:", &color::Blue);
+        self.print(
+            &format!(
+                "{}  Assignment: {}{}",
+                nerd_font_symbols::md::MD_EQUAL,
+                color::Fg(Self::OPERATOR_COLOR),
+                expr.identifier.span.literal
+            ),
+            &Self::TEXT_COLOR,
+        );
         self.increase_indentation();
-        self.visit_expression(&statement.codition);
+        self.visit_expression(&expr.expr);
+    }
+
+    fn visit_conditional_statement(&mut self, statement: &super::ASTConditionalStatement) {
+        self.print("If:", &color::Blue);
+        self.increase_indentation();
+        self.visit_expression(&statement.condition);
+        self.print("Then:", &Self::TEXT_COLOR);
         self.increase_indentation();
         self.visit_statement(&statement.then_branch);
+        self.decrease_indentation();
         if let Some(else_branch) = &statement.else_branch {
+            self.print("Else:", &Self::TEXT_COLOR);
+            self.increase_indentation();
             self.visit_statement(&else_branch.else_branch);
         }
+        self.decrease_indentation();
     }
 }
 
@@ -350,7 +370,7 @@ impl ASTVisitor for ASTHiglightPrinter {
             Fg(Self::FUNC_COLOR),
             Fg(Self::TEXT_COLOR),
         ));
-        self.visit_expression(&statement.codition);
+        self.visit_expression(&statement.condition);
         self.print(") ");
         // self.increase_indentation();
         // self.increase_indentation();

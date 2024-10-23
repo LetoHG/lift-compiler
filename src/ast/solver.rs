@@ -72,7 +72,7 @@ impl ASTVisitor for ASTSolver {
     }
 
     fn visit_conditional_statement(&mut self, statement: &super::ASTConditionalStatement) {
-        self.visit_expression(&statement.codition);
+        self.visit_expression(&statement.condition);
         let condition = self.result.unwrap();
 
         if condition != 0.0 {

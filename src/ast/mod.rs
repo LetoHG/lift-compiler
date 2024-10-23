@@ -149,7 +149,7 @@ pub struct ASTElseStatement {
 #[derive(Clone)]
 pub struct ASTConditionalStatement {
     keyword: Token,
-    codition: ASTExpression,
+    condition: ASTExpression,
     then_branch: Box<ASTStatement>,
     else_branch: Option<ASTElseStatement>,
 }
@@ -191,15 +191,15 @@ impl ASTStatement {
     }
 
     fn conditional(
-        if_token: Token,
-        codition: ASTExpression,
+        keyword: Token,
+        condition: ASTExpression,
         then_branch: ASTStatement,
         else_branch: Option<ASTElseStatement>,
     ) -> Self {
         Self {
             kind: ASTStatementKind::ConditionalStatement(ASTConditionalStatement {
-                keyword: if_token,
-                codition,
+                keyword,
+                condition,
                 then_branch: Box::new(then_branch),
                 else_branch,
             }),
