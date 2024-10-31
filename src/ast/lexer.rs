@@ -67,6 +67,8 @@ pub enum TokenKind {
     RightAngleBracketEqual, // less than or equal
 
     // Misc & other lexical symbols
+    SingleLineComment(String),
+    MultiLineComment(String),
     SlashSlash,
     SlashAstrisk,
     AstriskSlash,
@@ -158,6 +160,8 @@ impl fmt::Display for TokenKind {
             TokenKind::Whitespace => write!(f, "Whitespace"),
             TokenKind::Bad => write!(f, "Bad"),
             TokenKind::Eof => write!(f, "Eof"),
+            TokenKind::SingleLineComment(_) => write!(f, "//"),
+            TokenKind::MultiLineComment(_) => write!(f, "/* */"),
             _ => todo!(),
         }
     }
@@ -250,6 +254,10 @@ impl Lexer {
                 "null" => TokenKind::Null,
                 _ => TokenKind::Identifier,
             };
+        } else if c == '/' && self.peek(1)? == '/' {
+            kind = self.consume_single_line_comment();
+        } else if c == '/' && self.peek(1)? == '*' {
+            kind = self.consume_multi_line_comment();
         } else if Self::is_whitespace(&c) {
             self.consume();
             kind = TokenKind::Whitespace;
@@ -279,8 +287,12 @@ impl Lexer {
         *c == '.'
     }
 
+    fn is_linebreak(c: &char) -> bool {
+        *c == '\n'
+    }
+
     fn current_char(&mut self) -> Option<char> {
-        self.input.chars().nth(self.cursor)
+        self.peek(0)
     }
 
     fn consume(&mut self) -> Option<char> {
@@ -290,6 +302,44 @@ impl Lexer {
         let c = self.current_char();
         self.cursor += 1;
         c
+    }
+
+    fn peek(&mut self, offset: usize) -> Option<char> {
+        if self.cursor + offset >= self.input.len() {
+            return None;
+        }
+        self.input.chars().nth(self.cursor + offset)
+    }
+
+    fn consume_single_line_comment(&mut self) -> TokenKind {
+        self.consume();
+        self.consume();
+        let mut comment: String = "".to_string();
+        while let Some(c) = self.consume() {
+            comment.push(c);
+            if Self::is_linebreak(&c) {
+                break;
+            }
+        }
+        TokenKind::SingleLineComment(comment)
+    }
+
+    fn consume_multi_line_comment(&mut self) -> TokenKind {
+        self.consume();
+        self.consume();
+        let mut comment: String = "".to_string();
+        while let Some(c) = self.consume() {
+            if c == '*' {
+                if let Some(slash) = self.current_char() {
+                    if slash == '/' {
+                        self.consume();
+                        break;
+                    }
+                }
+            }
+            comment.push(c);
+        }
+        TokenKind::MultiLineComment(comment)
     }
 
     fn consume_number(&mut self) -> TokenKind {

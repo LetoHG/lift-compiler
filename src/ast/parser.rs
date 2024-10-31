@@ -48,7 +48,12 @@ impl Parser {
         Self {
             tokens: tokens
                 .iter()
-                .filter(|token| token.kind != TokenKind::Whitespace)
+                .filter(|token| match token.kind {
+                    TokenKind::Whitespace => false,
+                    TokenKind::SingleLineComment(_) => false,
+                    TokenKind::MultiLineComment(_) => false,
+                    _ => true,
+                })
                 .map(|token| token.clone())
                 .collect(),
             cursor: Cursor::new(),
@@ -60,9 +65,12 @@ impl Parser {
         let mut lexer = Lexer::new(input);
         let mut tokens = Vec::new();
         while let Some(token) = lexer.next_token() {
-            if token.kind != TokenKind::Whitespace {
-                tokens.push(token);
-            }
+            match token.kind {
+                TokenKind::Whitespace => (),
+                TokenKind::SingleLineComment(_) => (),
+                TokenKind::MultiLineComment(_) => (),
+                _ => tokens.push(token),
+            };
         }
         Self {
             tokens,
@@ -86,6 +94,8 @@ impl Parser {
             TokenKind::Func => self.parse_function_statement(),
             TokenKind::If => self.parse_if_statement(),
             TokenKind::LeftBrace => self.parse_compound_statement(),
+            TokenKind::SingleLineComment(_) => todo!("Decide if comments need to be in AST"),
+            TokenKind::MultiLineComment(_) => todo!("Decide if comments need to be in AST"),
             _ => self.parse_expression_statement(),
         }
     }
