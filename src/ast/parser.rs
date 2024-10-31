@@ -2,16 +2,14 @@ use crate::ast::lexer::{Lexer, Token, TokenKind};
 use crate::ast::{ASTExpression, ASTStatement};
 use crate::diagnostics::DiagnosticsColletion;
 use crate::diagnostics::DiagnosticsColletionCell;
-use std::fmt::Arguments;
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
 };
 
 use super::{
-    ASTBinaryExpression, ASTBinaryOperator, ASTBinaryOperatorKind, ASTElseStatement,
-    ASTExpressionKind, ASTFunctionCallExpression, ASTUnaryOperator, ASTUnaryOperatorKind,
-    FunctionArgumentDeclaration,
+    ASTBinaryOperator, ASTBinaryOperatorKind, ASTElseStatement, ASTUnaryOperator,
+    ASTUnaryOperatorKind, FunctionArgumentDeclaration,
 };
 
 struct Cursor {
@@ -288,10 +286,10 @@ impl Parser {
 
             TokenKind::LeftParen => {
                 let expr = self.parse_binary_expression(0);
-                let found_token = self.consume_expected(TokenKind::RightParen);
+                let _found_token = self.consume_expected(TokenKind::RightParen);
                 ASTExpression::parenthesized(expr)
             }
-            TokenKind::BitwiseNOT | TokenKind::Minus | TokenKind::ExclemationMark => {
+            TokenKind::Tilde | TokenKind::Minus | TokenKind::ExclemationMark => {
                 self.parse_unary_expression()
             }
             _ => {
@@ -331,17 +329,18 @@ impl Parser {
             TokenKind::Minus => Some(ASTBinaryOperatorKind::Minus),
             TokenKind::Astrisk => Some(ASTBinaryOperatorKind::Multiply),
             TokenKind::Slash => Some(ASTBinaryOperatorKind::Divide),
-            TokenKind::BitwiseOR => Some(ASTBinaryOperatorKind::BitwiseOR),
-            TokenKind::BitwiseAND => Some(ASTBinaryOperatorKind::BitwiseAND),
-            TokenKind::BitwiseXOR => Some(ASTBinaryOperatorKind::BitwiseXOR),
-            TokenKind::EqualTo => Some(ASTBinaryOperatorKind::EqualTo),
-            TokenKind::NotEqualTo => Some(ASTBinaryOperatorKind::NotEqualTo),
-            TokenKind::LogicAND => Some(ASTBinaryOperatorKind::LogicAND),
-            TokenKind::LogicOR => Some(ASTBinaryOperatorKind::LogicOR),
-            TokenKind::GreaterThan => Some(ASTBinaryOperatorKind::GreaterThan),
-            TokenKind::GreaterThanOrEqual => Some(ASTBinaryOperatorKind::GreaterThanOrEqual),
-            TokenKind::LessThan => Some(ASTBinaryOperatorKind::LessThan),
-            TokenKind::LessThanOrEqual => Some(ASTBinaryOperatorKind::LessThanOrEqual),
+
+            TokenKind::Pipe => Some(ASTBinaryOperatorKind::BitwiseOR),
+            TokenKind::Ampersand => Some(ASTBinaryOperatorKind::BitwiseAND),
+            TokenKind::Caret => Some(ASTBinaryOperatorKind::BitwiseXOR),
+            TokenKind::EqualEqual => Some(ASTBinaryOperatorKind::EqualTo),
+            TokenKind::ExclemationMarkEqual => Some(ASTBinaryOperatorKind::NotEqualTo),
+            TokenKind::AmpersandAmpersand => Some(ASTBinaryOperatorKind::LogicAND),
+            TokenKind::PipePipe => Some(ASTBinaryOperatorKind::LogicOR),
+            TokenKind::RightAngleBracket => Some(ASTBinaryOperatorKind::GreaterThan),
+            TokenKind::RightAngleBracketEqual => Some(ASTBinaryOperatorKind::GreaterThanOrEqual),
+            TokenKind::LeftAngleBracket => Some(ASTBinaryOperatorKind::LessThan),
+            TokenKind::LeftAngleBracketEqual => Some(ASTBinaryOperatorKind::LessThanOrEqual),
             _ => None,
         };
         kind.map(|kind| {
@@ -355,7 +354,7 @@ impl Parser {
     fn parse_unary_operator(&mut self) -> Option<ASTUnaryOperator> {
         let token = self.current_token();
         let kind = match token.kind {
-            TokenKind::BitwiseNOT => Some(ASTUnaryOperatorKind::BitwiseNOT),
+            TokenKind::Tilde => Some(ASTUnaryOperatorKind::BitwiseNOT),
             TokenKind::ExclemationMark => Some(ASTUnaryOperatorKind::LogicNot),
             TokenKind::Minus => Some(ASTUnaryOperatorKind::Minus),
             _ => None,

@@ -2,43 +2,87 @@ use core::fmt;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenKind {
+    // Litarals
     Integer(i64),
     Floating(f64),
     Identifier,
+
+    // Keywords
     Let,
+    Var,
     Func,
     Return,
     If,
     Else,
+    For,
+    In,
+    While,
+    I8,
+    I16,
+    I32,
+    I64,
+    U8,
+    U16,
+    U32,
+    U64,
+    F32,
+    F64,
+    Bool,
+    Char,
+    Str,
+    Struct,
+    Void,
+    Null,
+
+    // Arithmetic Operators
     Plus,
     Minus,
     Astrisk,
     Slash,
     Equal,
-    BitwiseOR,
-    BitwiseAND,
-    BitwiseXOR,
-    BitwiseNOT,
-    ExclemationMark,
-    EqualTo,
-    NotEqualTo,
-    LogicAND,
-    LogicOR,
-    GreaterThan,
-    GreaterThanOrEqual,
-    LessThan,
-    LessThanOrEqual,
+
+    PlusEqual,
+    MinusEqual,
+    AstriskEqual,
+    SlashEqual,
+
+    // Bitwise Operators
+    Pipe,           // OR
+    Ampersand,      // AND
+    Caret,          // XOR
+    Tilde,          // NOT
+    PipeEqual,      // OR self and assign
+    AmpersandEqual, // AND self and assign
+    CaretEqual,     // XOR self and assign
+
+    // Logical Operators
+    ExclemationMark,        // not
+    ExclemationMarkEqual,   // not equal to
+    EqualEqual,             // equal to
+    AmpersandAmpersand,     // AND
+    PipePipe,               // OR
+    LeftAngleBracket,       // greater than
+    LeftAngleBracketEqual,  // greater than or equal
+    RightAngleBracket,      // less than
+    RightAngleBracketEqual, // less than or equal
+
+    // Misc & other lexical symbols
+    SlashSlash,
+    SlashAstrisk,
+    AstriskSlash,
+
     LeftParen,
     RightParen,
     LeftBrace,
     RightBrace,
     LeftBracket,
     RightBracket,
-    LeftAngleBracket,
-    RightAngleBracket,
+
+    MinusRightAngleBracket, // -> for return types
     Comma,
     SemiColon,
     Colon,
+
     Whitespace,
     Bad,
     Eof,
@@ -47,46 +91,74 @@ pub enum TokenKind {
 impl fmt::Display for TokenKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TokenKind::Integer(_) => write!(f, "Integer"),
-            TokenKind::Floating(_) => write!(f, "Floating"),
             TokenKind::Identifier => write!(f, "Identifier"),
             TokenKind::Let => write!(f, "Let"),
+            TokenKind::Var => write!(f, "Var"),
             TokenKind::Func => write!(f, "Func"),
+            TokenKind::Return => write!(f, "Return"),
             TokenKind::If => write!(f, "If"),
             TokenKind::Else => write!(f, "Else"),
-            TokenKind::Return => write!(f, "Return"),
+            TokenKind::For => write!(f, "For"),
+            TokenKind::In => write!(f, "In"),
+            TokenKind::While => write!(f, "While"),
+            TokenKind::I8 => write!(f, "I8"),
+            TokenKind::I16 => write!(f, "I16"),
+            TokenKind::I32 => write!(f, "I32"),
+            TokenKind::I64 => write!(f, "I64"),
+            TokenKind::U8 => write!(f, "U8"),
+            TokenKind::U16 => write!(f, "U16"),
+            TokenKind::U32 => write!(f, "U32"),
+            TokenKind::U64 => write!(f, "U64"),
+            TokenKind::F32 => write!(f, "F32"),
+            TokenKind::F64 => write!(f, "F64"),
+            TokenKind::Bool => write!(f, "Bool"),
+            TokenKind::Char => write!(f, "Char"),
+            TokenKind::Str => write!(f, "Str"),
+            TokenKind::Struct => write!(f, "Struct"),
+            TokenKind::Void => write!(f, "Void"),
+            TokenKind::Null => write!(f, "Null"),
             TokenKind::Plus => write!(f, "+"),
             TokenKind::Minus => write!(f, "-"),
             TokenKind::Astrisk => write!(f, "*"),
             TokenKind::Slash => write!(f, "/"),
             TokenKind::Equal => write!(f, "="),
+            TokenKind::PlusEqual => write!(f, "+="),
+            TokenKind::MinusEqual => write!(f, "-="),
+            TokenKind::AstriskEqual => write!(f, "*="),
+            TokenKind::SlashEqual => write!(f, "/="),
+            TokenKind::Pipe => write!(f, "|"),
+            TokenKind::Ampersand => write!(f, "&"),
+            TokenKind::Caret => write!(f, "^"),
+            TokenKind::Tilde => write!(f, "~"),
+            TokenKind::PipeEqual => write!(f, "|="),
+            TokenKind::AmpersandEqual => write!(f, "&="),
+            TokenKind::CaretEqual => write!(f, "^="),
+            TokenKind::ExclemationMark => write!(f, "!"),
+            TokenKind::ExclemationMarkEqual => write!(f, "!="),
+            TokenKind::EqualEqual => write!(f, "=="),
+            TokenKind::AmpersandAmpersand => write!(f, "&&"),
+            TokenKind::PipePipe => write!(f, "||"),
+            TokenKind::LeftAngleBracket => write!(f, ">"),
+            TokenKind::LeftAngleBracketEqual => write!(f, "<="),
+            TokenKind::RightAngleBracket => write!(f, ">"),
+            TokenKind::RightAngleBracketEqual => write!(f, ">="),
+            TokenKind::SlashSlash => write!(f, "//"),
+            TokenKind::SlashAstrisk => write!(f, "/*"),
+            TokenKind::AstriskSlash => write!(f, "*/"),
             TokenKind::LeftParen => write!(f, "("),
             TokenKind::RightParen => write!(f, ")"),
             TokenKind::LeftBrace => write!(f, "{}", '{'),
             TokenKind::RightBrace => write!(f, "{}", '}'),
+            TokenKind::LeftBracket => write!(f, "["),
+            TokenKind::RightBracket => write!(f, "]"),
+            TokenKind::MinusRightAngleBracket => write!(f, "->"),
             TokenKind::Comma => write!(f, ","),
             TokenKind::SemiColon => write!(f, ";"),
+            TokenKind::Colon => write!(f, ":"),
             TokenKind::Whitespace => write!(f, "Whitespace"),
             TokenKind::Bad => write!(f, "Bad"),
             TokenKind::Eof => write!(f, "Eof"),
-            TokenKind::EqualTo => write!(f, "=="),
-            TokenKind::NotEqualTo => write!(f, "!="),
-            TokenKind::LogicAND => write!(f, "&&"),
-            TokenKind::LogicOR => write!(f, "||"),
-            TokenKind::BitwiseOR => write!(f, "|"),
-            TokenKind::BitwiseAND => write!(f, "&"),
-            TokenKind::BitwiseXOR => write!(f, "^"),
-            TokenKind::BitwiseNOT => write!(f, "~"),
-            TokenKind::ExclemationMark => write!(f, "!"),
-            TokenKind::GreaterThan => write!(f, ">"),
-            TokenKind::GreaterThanOrEqual => write!(f, ">="),
-            TokenKind::LessThan => write!(f, "<"),
-            TokenKind::LessThanOrEqual => write!(f, "<="),
-            TokenKind::LeftBracket => write!(f, "["),
-            TokenKind::RightBracket => write!(f, "]"),
-            TokenKind::LeftAngleBracket => write!(f, "<"),
-            TokenKind::RightAngleBracket => write!(f, ">"),
-            TokenKind::Colon => write!(f, ":"),
+            _ => todo!(),
         }
     }
 }
@@ -152,14 +224,32 @@ impl Lexer {
             let identifier = self.consume_identifier();
             kind = match identifier.as_str() {
                 "let" => TokenKind::Let,
+                "var" => TokenKind::Var,
                 "func" => TokenKind::Func,
                 "return" => TokenKind::Return,
                 "if" => TokenKind::If,
                 "else" => TokenKind::Else,
+                "for" => TokenKind::For,
+                "in" => TokenKind::In,
+                "while" => TokenKind::While,
+                "i8" => TokenKind::I8,
+                "i16" => TokenKind::I16,
+                "i32" => TokenKind::I32,
+                "i64" => TokenKind::I64,
+                "u8" => TokenKind::U8,
+                "u16" => TokenKind::U16,
+                "u32" => TokenKind::U32,
+                "u64" => TokenKind::U64,
+                "f32" => TokenKind::F32,
+                "f64" => TokenKind::F64,
+                "bool" => TokenKind::Bool,
+                "char" => TokenKind::Char,
+                "str" => TokenKind::Str,
+                "struct" => TokenKind::Struct,
+                "void" => TokenKind::Void,
+                "null" => TokenKind::Null,
                 _ => TokenKind::Identifier,
             };
-        } else if Self::is_operator_start(&c) {
-            kind = self.consume_boolean_operator();
         } else if Self::is_whitespace(&c) {
             self.consume();
             kind = TokenKind::Whitespace;
@@ -187,17 +277,6 @@ impl Lexer {
 
     fn is_decimal_dot(c: &char) -> bool {
         *c == '.'
-    }
-
-    fn is_operator_start(c: &char) -> bool {
-        false
-        // "=="
-        // "&&"
-        // "||"
-        // "+="
-        // "-="
-        // "*="
-        // "/="
     }
 
     fn current_char(&mut self) -> Option<char> {
@@ -280,42 +359,75 @@ impl Lexer {
         identifier
     }
 
-    fn consume_boolean_operator(&mut self) -> TokenKind {
-        // let c1 = self.consume().unwrap();
-        // let c1 = self.consume().unwrap();
-
-        TokenKind::Bad
-    }
-
     fn consume_punctuation(&mut self) -> TokenKind {
         match self.consume().unwrap() {
-            '+' => TokenKind::Plus,
-            '-' => TokenKind::Minus,
-            '*' => TokenKind::Astrisk,
-            '/' => TokenKind::Slash,
+            '+' => {
+                if self.current_char().unwrap() == '=' {
+                    return TokenKind::PlusEqual;
+                }
+                TokenKind::Plus
+            }
+            '-' => {
+                if self.current_char().unwrap() == '=' {
+                    return TokenKind::MinusEqual;
+                }
+                if self.current_char().unwrap() == '>' {
+                    return TokenKind::MinusRightAngleBracket;
+                }
+                TokenKind::Minus
+            }
+            '*' => {
+                if self.current_char().unwrap() == '=' {
+                    return TokenKind::AstriskEqual;
+                }
+                TokenKind::Astrisk
+            }
+            '/' => {
+                if self.current_char().unwrap() == '=' {
+                    return TokenKind::SlashEqual;
+                }
+                if self.current_char().unwrap() == '/' {
+                    return TokenKind::SlashSlash;
+                }
+                if self.current_char().unwrap() == '*' {
+                    return TokenKind::SlashAstrisk;
+                }
+                TokenKind::Slash
+            }
             '=' => {
                 if self.current_char().unwrap() == '=' {
-                    return TokenKind::EqualTo;
+                    return TokenKind::EqualEqual;
                 }
                 TokenKind::Equal
             }
             '|' => {
                 if self.current_char().unwrap() == '=' {
-                    return TokenKind::LogicOR;
+                    return TokenKind::PipeEqual;
                 }
-                TokenKind::BitwiseOR
+                if self.current_char().unwrap() == '|' {
+                    return TokenKind::PipePipe;
+                }
+                TokenKind::Pipe
             }
             '&' => {
                 if self.current_char().unwrap() == '=' {
-                    return TokenKind::LogicAND;
+                    return TokenKind::AstriskEqual;
                 }
-                TokenKind::BitwiseAND
+                if self.current_char().unwrap() == '&' {
+                    return TokenKind::AmpersandAmpersand;
+                }
+                TokenKind::Ampersand
             }
-            '^' => TokenKind::BitwiseXOR,
-            '~' => TokenKind::BitwiseNOT,
+            '^' => {
+                if self.current_char().unwrap() == '^' {
+                    return TokenKind::CaretEqual;
+                }
+                TokenKind::Caret
+            }
+            '~' => TokenKind::Tilde,
             '!' => {
                 if self.current_char().unwrap() == '=' {
-                    return TokenKind::NotEqualTo;
+                    return TokenKind::ExclemationMarkEqual;
                 }
                 TokenKind::ExclemationMark
             }
@@ -325,17 +437,15 @@ impl Lexer {
             ']' => TokenKind::RightBracket,
             '<' => {
                 if self.current_char().unwrap() == '=' {
-                    return TokenKind::LessThanOrEqual;
+                    return TokenKind::LeftAngleBracketEqual;
                 }
-                TokenKind::LessThan
-                // TokenKind::LeftAngleBracket
+                TokenKind::LeftAngleBracket
             }
             '>' => {
                 if self.current_char().unwrap() == '=' {
-                    return TokenKind::GreaterThanOrEqual;
+                    return TokenKind::RightAngleBracketEqual;
                 }
-                TokenKind::GreaterThan
-                // TokenKind::RightAngleBracket
+                TokenKind::RightAngleBracket
             }
             '{' => TokenKind::LeftBrace,
             '}' => TokenKind::RightBrace,

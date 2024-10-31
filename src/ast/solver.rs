@@ -1,9 +1,7 @@
-use std::fmt::Arguments;
 use std::{collections::HashMap, ops::Not};
 
 use super::{
-    ASTBinaryOperator, ASTBinaryOperatorKind, ASTExpressionKind, ASTFunctionStatement,
-    ASTReturnStatement, ASTStatementKind, ASTVisitor,
+    ASTBinaryOperator, ASTBinaryOperatorKind, ASTFunctionStatement, ASTReturnStatement, ASTVisitor,
 };
 
 type Scope = HashMap<String, f64>;
