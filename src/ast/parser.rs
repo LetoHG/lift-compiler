@@ -201,11 +201,24 @@ impl Parser {
         })
     }
 
+    fn consume_assignment_operator(&mut self) -> ASTBinaryOperator {
+        let op = self.consume().clone();
+        let kind = match op.kind {
+            TokenKind::PlusEqual => ASTBinaryOperatorKind::Plus,
+            TokenKind::MinusEqual => ASTBinaryOperatorKind::Minus,
+            TokenKind::AstriskEqual => ASTBinaryOperatorKind::Multiply,
+            TokenKind::SlashEqual => ASTBinaryOperatorKind::Divide,
+            TokenKind::PipeEqual => ASTBinaryOperatorKind::BitwiseOR,
+            TokenKind::AmpersandEqual => ASTBinaryOperatorKind::BitwiseAND,
+            TokenKind::CaretEqual => ASTBinaryOperatorKind::BitwiseXOR,
+            _ => todo!(),
+        };
+        ASTBinaryOperator { kind, token: op }
+    }
+
     fn parse_if_statement(&mut self) -> ASTStatement {
         let keyword = self.consume_expected(TokenKind::If).clone();
-        self.consume_expected(TokenKind::LeftParen);
         let condition = self.parse_expression();
-        self.consume_expected(TokenKind::RightParen);
         let then_branch = self.parse_statement();
         let else_branch = self.consume_optional_else_statement();
 
@@ -218,13 +231,26 @@ impl Parser {
     }
 
     fn parse_assignment_expression(&mut self) -> ASTExpression {
-        if self.current_token().kind == TokenKind::Identifier
-            && self.peek(1).kind == TokenKind::Equal
-        {
-            let var = self.consume().clone();
-            self.consume_expected(TokenKind::Equal);
-            let assignment = self.parse_binary_expression(0);
-            return ASTExpression::assignment(var, assignment);
+        if self.current_token().kind == TokenKind::Identifier {
+            if self.peek(1).kind == TokenKind::Equal {
+                let var = self.consume().clone();
+                self.consume_expected(TokenKind::Equal);
+                let assignment = self.parse_binary_expression(0);
+                return ASTExpression::assignment(var, assignment);
+            }
+            if self.peek(1).kind == TokenKind::PlusEqual
+                || self.peek(1).kind == TokenKind::MinusEqual
+                || self.peek(1).kind == TokenKind::AstriskEqual
+                || self.peek(1).kind == TokenKind::Slash
+            {
+                let var = self.consume().clone();
+                let op = self.consume_assignment_operator();
+                let assignment = self.parse_binary_expression(0);
+                return ASTExpression::assignment(
+                    var.clone(),
+                    ASTExpression::binary(op, ASTExpression::identifier(var.clone()), assignment),
+                );
+            }
         }
         self.parse_binary_expression(0)
     }

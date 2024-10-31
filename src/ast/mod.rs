@@ -102,7 +102,7 @@ pub trait ASTVisitor {
 enum ASTStatementKind {
     Expr(ASTExpression),
     Let(ASTLetStatement),
-    Var(ASTVarStatement),
+    // Var(ASTVarStatement),
     Return(ASTReturnStatement),
     Compound(ASTCompoundStatement),
     FuncDecl(ASTFunctionStatement),

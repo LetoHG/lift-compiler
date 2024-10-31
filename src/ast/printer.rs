@@ -371,12 +371,12 @@ impl ASTVisitor for ASTHiglightPrinter {
 
     fn visit_if_statement(&mut self, statement: &super::ASTIfStatement) {
         self.print_with_indent(&format!(
-            "{}if{} (",
+            "{}if{} ",
             Fg(Self::FUNC_COLOR),
             Fg(Self::TEXT_COLOR),
         ));
         self.visit_expression(&statement.condition);
-        self.print(") ");
+        self.add_whitespace();
         // self.increase_indentation();
         // self.increase_indentation();
         self.visit_statement(&statement.then_branch);

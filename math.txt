@@ -5,6 +5,7 @@ func max(arg1, arg2) {
   } else {
     ret = arg2;
   }
+  ret += 1;
   return ret;
 }
 

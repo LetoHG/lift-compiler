@@ -255,7 +255,6 @@ impl Lexer {
             kind = TokenKind::Whitespace;
         } else {
             kind = self.consume_punctuation();
-            println!("Punctuation {:?}", kind);
         }
 
         let end = self.cursor;
