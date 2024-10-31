@@ -84,7 +84,7 @@ impl Parser {
             TokenKind::Let => self.parse_let_statement(),
             TokenKind::Return => self.parse_return_statement(),
             TokenKind::Func => self.parse_function_statement(),
-            TokenKind::If => self.parse_conditional_statement(),
+            TokenKind::If => self.parse_if_statement(),
             TokenKind::LeftBrace => self.parse_compound_statement(),
             _ => self.parse_expression_statement(),
         }
@@ -201,7 +201,7 @@ impl Parser {
         })
     }
 
-    fn parse_conditional_statement(&mut self) -> ASTStatement {
+    fn parse_if_statement(&mut self) -> ASTStatement {
         let keyword = self.consume_expected(TokenKind::If).clone();
         self.consume_expected(TokenKind::LeftParen);
         let condition = self.parse_expression();

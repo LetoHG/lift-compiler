@@ -69,7 +69,7 @@ impl ASTVisitor for ASTSolver {
         self.add_identifier_to_scope(&statement.identifier.span.literal, self.result.unwrap());
     }
 
-    fn visit_conditional_statement(&mut self, statement: &super::ASTConditionalStatement) {
+    fn visit_if_statement(&mut self, statement: &super::ASTIfStatement) {
         self.visit_expression(&statement.condition);
         let condition = self.result.unwrap();
 
@@ -117,7 +117,7 @@ impl ASTVisitor for ASTSolver {
         self.enter_scope(arguments);
 
         // todo: that check should be done before
-        if let super::ASTStatementKind::CompoundStatement(statement) = &func.body.kind {
+        if let super::ASTStatementKind::Compound(statement) = &func.body.kind {
             for statement in statement.statements.iter() {
                 self.visit_statement(statement);
             }

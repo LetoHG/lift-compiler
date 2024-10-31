@@ -67,7 +67,7 @@ impl ASTVisitor for SymbolChecker {
         self.leave_scope();
     }
 
-    fn visit_conditional_statement(&mut self, statement: &super::ASTConditionalStatement) {
+    fn visit_if_statement(&mut self, statement: &super::ASTIfStatement) {
         self.visit_statement(&statement.then_branch);
         if let Some(else_branch) = &statement.else_branch {
             self.visit_statement(&else_branch.else_branch);
@@ -92,7 +92,7 @@ impl ASTVisitor for SymbolChecker {
 
         self.visit_statement(&function.body);
         // match &function.body.kind {
-        //     super::ASTStatementKind::CompoundStatement(statement) => {
+        //     super::ASTStatementKind::Compound(statement) => {
         //         for statement in statement.statements.iter() {
         //             self.visit_statement(statement);
         //         }

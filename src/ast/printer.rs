@@ -112,7 +112,7 @@ impl ASTVisitor for ASTTreePrinter {
         self.print(&format!("Body:"), &Self::TEXT_COLOR);
         self.increase_indentation();
 
-        if let super::ASTStatementKind::CompoundStatement(statement) = &function.body.kind {
+        if let super::ASTStatementKind::Compound(statement) = &function.body.kind {
             self.visit_compound_statement(statement);
         }
         self.decrease_indentation();
@@ -247,7 +247,7 @@ impl ASTVisitor for ASTTreePrinter {
         self.visit_expression(&expr.expr);
     }
 
-    fn visit_conditional_statement(&mut self, statement: &super::ASTConditionalStatement) {
+    fn visit_if_statement(&mut self, statement: &super::ASTIfStatement) {
         self.print("If:", &color::Blue);
         self.increase_indentation();
         self.visit_expression(&statement.condition);
@@ -271,14 +271,19 @@ pub struct ASTHiglightPrinter {
 
 impl ASTHiglightPrinter {
     const INDENATION: usize = 2;
+
+    const KEYWORD_COLOR: color::Green = color::Green;
+    const TYPE_COLOR: color::Cyan = color::Cyan;
+    const OPERATOR_COLOR: color::Green = color::Green;
+    const TEXT_COLOR: color::White = color::White;
+
     const INTEGER_COLOR: color::Cyan = color::Cyan;
     const FLOAT_COLOR: color::Cyan = color::Cyan;
-    const TEXT_COLOR: color::White = color::White;
-    const LET_COLOR: color::Red = color::Red;
-    const FUNC_COLOR: color::Red = color::Red;
+    const LET_COLOR: color::Green = color::Green;
+    const FUNC_COLOR: color::Green = color::Green;
     const FUNC_CALL_COLOR: color::Yellow = color::Yellow;
     const FUNC_NAME_COLOR: color::Yellow = color::Yellow;
-    const VARIABLE_COLOR: color::LightGreen = color::LightGreen;
+    const VARIABLE_COLOR: color::LightWhite = color::LightWhite;
 
     pub fn new() -> Self {
         Self {
@@ -364,7 +369,7 @@ impl ASTVisitor for ASTHiglightPrinter {
         self.print_with_indent(&format!("{}{}", Fg(Self::TEXT_COLOR), '}'));
     }
 
-    fn visit_conditional_statement(&mut self, statement: &super::ASTConditionalStatement) {
+    fn visit_if_statement(&mut self, statement: &super::ASTIfStatement) {
         self.print_with_indent(&format!(
             "{}if{} (",
             Fg(Self::FUNC_COLOR),
@@ -407,7 +412,7 @@ impl ASTVisitor for ASTHiglightPrinter {
         }
 
         self.print(&format!("{}) ", Fg(Self::TEXT_COLOR)));
-        if let super::ASTStatementKind::CompoundStatement(statement) = &function.body.kind {
+        if let super::ASTStatementKind::Compound(statement) = &function.body.kind {
             self.visit_compound_statement(statement);
         }
         self.add_newline();

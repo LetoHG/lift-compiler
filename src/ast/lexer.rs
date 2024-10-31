@@ -255,6 +255,7 @@ impl Lexer {
             kind = TokenKind::Whitespace;
         } else {
             kind = self.consume_punctuation();
+            println!("Punctuation {:?}", kind);
         }
 
         let end = self.cursor;
@@ -363,63 +364,76 @@ impl Lexer {
         match self.consume().unwrap() {
             '+' => {
                 if self.current_char().unwrap() == '=' {
+                    self.consume();
                     return TokenKind::PlusEqual;
                 }
                 TokenKind::Plus
             }
             '-' => {
                 if self.current_char().unwrap() == '=' {
+                    self.consume();
                     return TokenKind::MinusEqual;
                 }
                 if self.current_char().unwrap() == '>' {
+                    self.consume();
                     return TokenKind::MinusRightAngleBracket;
                 }
                 TokenKind::Minus
             }
             '*' => {
                 if self.current_char().unwrap() == '=' {
+                    self.consume();
                     return TokenKind::AstriskEqual;
                 }
                 TokenKind::Astrisk
             }
             '/' => {
                 if self.current_char().unwrap() == '=' {
+                    self.consume();
                     return TokenKind::SlashEqual;
                 }
                 if self.current_char().unwrap() == '/' {
+                    self.consume();
                     return TokenKind::SlashSlash;
                 }
                 if self.current_char().unwrap() == '*' {
+                    self.consume();
                     return TokenKind::SlashAstrisk;
                 }
                 TokenKind::Slash
             }
             '=' => {
                 if self.current_char().unwrap() == '=' {
+                    self.consume();
                     return TokenKind::EqualEqual;
                 }
                 TokenKind::Equal
             }
             '|' => {
                 if self.current_char().unwrap() == '=' {
+                    self.consume();
                     return TokenKind::PipeEqual;
                 }
                 if self.current_char().unwrap() == '|' {
+                    self.consume();
                     return TokenKind::PipePipe;
                 }
                 TokenKind::Pipe
             }
             '&' => {
                 if self.current_char().unwrap() == '=' {
+                    self.consume();
                     return TokenKind::AstriskEqual;
                 }
                 if self.current_char().unwrap() == '&' {
+                    self.consume();
                     return TokenKind::AmpersandAmpersand;
                 }
                 TokenKind::Ampersand
             }
             '^' => {
                 if self.current_char().unwrap() == '^' {
+                    self.consume();
                     return TokenKind::CaretEqual;
                 }
                 TokenKind::Caret
@@ -427,6 +441,7 @@ impl Lexer {
             '~' => TokenKind::Tilde,
             '!' => {
                 if self.current_char().unwrap() == '=' {
+                    self.consume();
                     return TokenKind::ExclemationMarkEqual;
                 }
                 TokenKind::ExclemationMark
@@ -437,12 +452,14 @@ impl Lexer {
             ']' => TokenKind::RightBracket,
             '<' => {
                 if self.current_char().unwrap() == '=' {
+                    self.consume();
                     return TokenKind::LeftAngleBracketEqual;
                 }
                 TokenKind::LeftAngleBracket
             }
             '>' => {
                 if self.current_char().unwrap() == '=' {
+                    self.consume();
                     return TokenKind::RightAngleBracketEqual;
                 }
                 TokenKind::RightAngleBracket
