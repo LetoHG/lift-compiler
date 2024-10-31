@@ -42,6 +42,7 @@ pub trait ASTVisitor {
             ASTStatementKind::Return(statement) => self.visit_return_statement(statement),
             ASTStatementKind::FuncDecl(statement) => self.visit_funtion_statement(statement),
             ASTStatementKind::Let(statement) => self.visit_let_statement(statement),
+            ASTStatementKind::Var(statement) => todo!(),
             ASTStatementKind::Compound(statement) => self.visit_compound_statement(statement),
             ASTStatementKind::If(statement) => self.visit_if_statement(statement),
         }
@@ -102,7 +103,7 @@ pub trait ASTVisitor {
 enum ASTStatementKind {
     Expr(ASTExpression),
     Let(ASTLetStatement),
-    // Var(ASTVarStatement),
+    Var(ASTVarStatement),
     Return(ASTReturnStatement),
     Compound(ASTCompoundStatement),
     FuncDecl(ASTFunctionStatement),
@@ -112,12 +113,14 @@ enum ASTStatementKind {
 #[derive(Clone)]
 pub struct ASTLetStatement {
     identifier: Token,
+    data_type: Token,
     initializer: ASTExpression,
 }
 
 #[derive(Clone)]
 pub struct ASTVarStatement {
     identifier: Token,
+    data_type: Token,
     initializer: ASTExpression,
 }
 
@@ -133,6 +136,7 @@ pub struct ASTCompoundStatement {
 #[derive(Clone)]
 pub struct FunctionArgumentDeclaration {
     identifier: Token,
+    data_type: Token,
 }
 
 #[derive(Clone)]
@@ -140,6 +144,7 @@ pub struct ASTFunctionStatement {
     identifier: Token,
     arguments: Vec<FunctionArgumentDeclaration>,
     body: Box<ASTStatement>,
+    return_type: Token,
 }
 
 #[derive(Clone)]
@@ -176,10 +181,21 @@ impl ASTStatement {
             kind: ASTStatementKind::Return(ASTReturnStatement { expr }),
         }
     }
-    fn let_statement(identifier: Token, initializer: ASTExpression) -> Self {
+    fn let_statement(identifier: Token, data_type: Token, initializer: ASTExpression) -> Self {
         Self {
             kind: ASTStatementKind::Let(ASTLetStatement {
                 identifier,
+                data_type,
+                initializer,
+            }),
+        }
+    }
+
+    fn var_statement(identifier: Token, data_type: Token, initializer: ASTExpression) -> Self {
+        Self {
+            kind: ASTStatementKind::Var(ASTVarStatement {
+                identifier,
+                data_type,
                 initializer,
             }),
         }
@@ -211,12 +227,14 @@ impl ASTStatement {
         identifier: Token,
         arguments: Vec<FunctionArgumentDeclaration>,
         body: ASTStatement,
+        return_type: Token,
     ) -> Self {
         Self {
             kind: ASTStatementKind::FuncDecl(ASTFunctionStatement {
                 identifier,
                 arguments,
                 body: Box::new(body),
+                return_type,
             }),
         }
     }

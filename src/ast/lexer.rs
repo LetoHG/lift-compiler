@@ -171,7 +171,7 @@ pub struct TextSpan {
 }
 
 impl TextSpan {
-    fn new(start: usize, end: usize, literal: String) -> Self {
+    pub fn new(start: usize, end: usize, literal: String) -> Self {
         Self {
             start,
             end,

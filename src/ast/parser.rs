@@ -7,6 +7,7 @@ use std::{
     rc::Rc,
 };
 
+use super::lexer::TextSpan;
 use super::{
     ASTBinaryOperator, ASTBinaryOperatorKind, ASTElseStatement, ASTUnaryOperator,
     ASTUnaryOperatorKind, FunctionArgumentDeclaration,
@@ -47,9 +48,7 @@ impl Parser {
         Self {
             tokens: tokens
                 .iter()
-                .filter(|token| {
-                    token.kind != TokenKind::Whitespace && token.kind != TokenKind::SemiColon
-                })
+                .filter(|token| token.kind != TokenKind::Whitespace)
                 .map(|token| token.clone())
                 .collect(),
             cursor: Cursor::new(),
@@ -61,7 +60,7 @@ impl Parser {
         let mut lexer = Lexer::new(input);
         let mut tokens = Vec::new();
         while let Some(token) = lexer.next_token() {
-            if token.kind != TokenKind::Whitespace && token.kind != TokenKind::SemiColon {
+            if token.kind != TokenKind::Whitespace {
                 tokens.push(token);
             }
         }
@@ -82,6 +81,7 @@ impl Parser {
     fn parse_statement(&mut self) -> ASTStatement {
         match self.current_token().kind {
             TokenKind::Let => self.parse_let_statement(),
+            TokenKind::Var => self.parse_var_statement(),
             TokenKind::Return => self.parse_return_statement(),
             TokenKind::Func => self.parse_function_statement(),
             TokenKind::If => self.parse_if_statement(),
@@ -120,22 +120,39 @@ impl Parser {
     fn parse_return_statement(&mut self) -> ASTStatement {
         self.consume_expected(TokenKind::Return);
         let expr = self.parse_expression();
+        self.consume_expected(TokenKind::SemiColon);
         ASTStatement::return_statement(expr)
     }
 
     fn parse_let_statement(&mut self) -> ASTStatement {
         self.consume_expected(TokenKind::Let);
         let identifier = self.consume_expected(TokenKind::Identifier).clone();
+        self.consume_expected(TokenKind::Colon);
+        let data_type = self.consume().clone();
         self.consume_expected(TokenKind::Equal);
         let expr = self.parse_expression();
-        ASTStatement::let_statement(identifier, expr)
+        self.consume_expected(TokenKind::SemiColon);
+        ASTStatement::let_statement(identifier, data_type, expr)
+    }
+
+    fn parse_var_statement(&mut self) -> ASTStatement {
+        self.consume_expected(TokenKind::Var);
+        let identifier = self.consume_expected(TokenKind::Identifier).clone();
+        self.consume_expected(TokenKind::Colon);
+        let data_type = self.consume().clone();
+        self.consume_expected(TokenKind::Equal);
+        let expr = self.parse_expression();
+        self.consume_expected(TokenKind::SemiColon);
+        ASTStatement::var_statement(identifier, data_type, expr)
     }
 
     fn parse_compound_statement(&mut self) -> ASTStatement {
         self.consume_expected(TokenKind::LeftBrace);
         let mut statements: Vec<ASTStatement> = Vec::new();
-        while self.current_token().kind != TokenKind::RightBrace {
-            println!("{:?}", self.current_token());
+        while self.current_token().kind != TokenKind::RightBrace
+            && self.current_token().kind != TokenKind::Eof
+        {
+            println!("Help {:?}", self.current_token());
             statements.push(self.parse_statement());
         }
         self.consume_expected(TokenKind::RightBrace);
@@ -155,7 +172,9 @@ impl Parser {
         }
 
         let mut arguments: Vec<FunctionArgumentDeclaration> = Vec::new();
-        while self.current_token().kind != TokenKind::RightParen {
+        while self.current_token().kind != TokenKind::RightParen
+            && self.current_token().kind != TokenKind::Eof
+        {
             if self.current_token().kind == TokenKind::Comma {
                 self.diagnostics_colletion
                     .borrow_mut()
@@ -164,8 +183,11 @@ impl Parser {
             }
 
             if self.current_token().kind == TokenKind::Identifier {
+                let identifier = self.consume().clone();
+                self.consume_expected(TokenKind::Colon);
                 arguments.push(FunctionArgumentDeclaration {
-                    identifier: self.consume().clone(),
+                    identifier,
+                    data_type: self.consume().clone(),
                 });
             } else {
                 self.diagnostics_colletion
@@ -183,10 +205,26 @@ impl Parser {
             }
         }
 
-        self.consume_expected(TokenKind::RightParen);
+        let right_paren = self.consume_expected(TokenKind::RightParen);
+
+        // Return type is declared like `func foo() -> i32 {...}`
+        let return_type = if self.current_token().kind == TokenKind::MinusRightAngleBracket {
+            self.consume_expected(TokenKind::MinusRightAngleBracket);
+            self.consume().clone()
+        } else {
+            Token {
+                kind: TokenKind::Void,
+                span: TextSpan::new(
+                    right_paren.span.start,
+                    right_paren.span.end,
+                    "void".to_string(),
+                ),
+            }
+        };
+
         let body = self.parse_compound_statement();
 
-        ASTStatement::function(identifier, arguments, body)
+        ASTStatement::function(identifier, arguments, body, return_type)
     }
 
     fn consume_optional_else_statement(&mut self) -> Option<ASTElseStatement> {
@@ -227,6 +265,7 @@ impl Parser {
 
     fn parse_expression_statement(&mut self) -> ASTStatement {
         let expr = self.parse_expression();
+        self.consume_expected(TokenKind::SemiColon);
         ASTStatement::expression(expr)
     }
 
@@ -268,7 +307,9 @@ impl Parser {
         }
 
         let mut arguments: Vec<ASTExpression> = Vec::new();
-        while self.current_token().kind != TokenKind::RightParen {
+        while self.current_token().kind != TokenKind::RightParen
+            && self.current_token().kind != TokenKind::Eof
+        {
             if self.current_token().kind == TokenKind::Comma {
                 self.diagnostics_colletion
                     .borrow_mut()

@@ -1,5 +1,5 @@
-func max(arg1, arg2) {
-  let ret = 0;
+func max(arg1 : i32, arg2 : u8) -> i32 {
+  let ret : i32 = 0;
   if (arg1 > arg2) {
     ret = arg1;
   } else {
@@ -9,4 +9,4 @@ func max(arg1, arg2) {
   return ret;
 }
 
-return max(7, 5)
+return max(7, 5);
