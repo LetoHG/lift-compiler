@@ -9,152 +9,99 @@ Herwig <herwig.m.letosky@gmail.com>
 
 When I decided to learn Rust, I initially struggled to come up with project ideas and find the motivation to start coding. Coming from a C++ background, I thought it would be interesting to try implementing a compiler in Rust. After all, compilers are the tools that have enabled my journey in programming, and creating one could deepen my understanding of both languages.
 
-== LIFT Language Specification (Implementation Checklist)
+== Roadmap for Implementation
 
-* [ ] Lexical Elements
-** [x] Identifiers
-** [x] Keywords
-** [x] Literals
+=== Phase 1: Basic Language Infrastructure
 
-* [ ] Data Types
-** [ ] Primitive Types
-** [ ] Custom Types
+. ✅ Lexer: Create a lexer to tokenize basic elements like keywords, identifiers, literals, and symbols.
+. 🔄 Parser: Develop a recursive-descent parser to handle:
+** 🔄 Module declarations, function definitions, and expressions.
+** 🔄 Basic control flow (if/else, for, while).
+. 🔄 AST (Abstract Syntax Tree): Define structures for the AST to represent language constructs.
 
-* [ ] Variable Declaration & Assignment
-** [x] Mutable Variables
-** [ ] Immutable Variables
+=== Phase 2: Core Language Functionality
 
-* [x] Expressions & Operators
-** [x] Arithmetic Operators
-** [x] Comparison Operators
-** [x] Logical Operators
+. 📝 Type Checker: Implement basic type-checking rules to ensure variable types, function signatures, and return types match.
+. 📝 Basic Expression Evaluation: Handle integer, float, and boolean expressions, including arithmetic operations and conditionals.
+. 📝 Control Flow: Implement if/else, for, and while loop handling within the AST.
+. 📝 Variables and Scopes: Implement symbol tables for local variables, global variables, and scoping rules.
 
-* [ ] Control Flow
-** [x] Conditional Statements
-** [ ] Loops
-*** [ ] For Loop
-*** [ ] While Loop
+== LIFT Core Language Specification
 
-* [ ] Functions
-** [x] Function Declaration
-** [ ] Anonymous Functions
+=== 1. Basic Syntax and Structure
 
-* [ ] Pattern Matching
-** [ ] Match Statement
+* Modules: Each file defines a module, and main module contains the entry point.
+* Comments: Support single-line (`//`) and multi-line (`/* ... */`) comments.
+* Semicolons (`;`): Statements end with a semicolon.
 
-* [ ] Data Structures
-** [ ] Structs
+[source, lift]
+----
+// File: main.lift
+module main;
 
-== LIFT Language Specification (Setch)
+func main() -> i32 {
+    println("Hello, LIFT!");
+    return 0;
+}
+----
 
-=== 1. Lexical Elements
+==== 1.1. Lexical Elements
 
-==== 1.1 Identifiers
+===== 1.1 Identifiers
 * Identifiers are names for variables, functions, and other user-defined entities.
 * They must start with a letter (`a-z, A-Z`) or underscore (`_`), followed by letters, digits (`0-9`), or underscores.
 * Identifiers are case-sensitive.
 
-Example:
-
 [source, lift]
 ----
-let myVar = 10;
-const _count = 5;
+var myVar = 10;
+let _count = 5;
 func calculate_sum() { ... }
 ----
 
-==== 1.2 Keywords
+===== 1.2 Keywords
 
 Reserved words that cannot be used as identifiers.
-Examples include:
 
-`let`, `const`, `func`, `if`, `else`, `match`, `struct`, `return`, `import`, `for`, `in`, `while`, `try`, `catch`, etc.
+* `let`, `var`
+* `func`, `return`
+* `if`, `else`, `for`, `in`, `while`
+* `i8`, `i16`, `i32`, `i64` and `u8`, `u16`, `u32`, `u64`
+* `f32`, `f64`
+* `bool`
+* `char`, `str`
+* `struct`
+* `void`, `null`
 
-==== 1.3 Literals
+===== 1.3 Literals
 
-[cols="~,~"]
-|===
-| Name | Description
-
-| **String**  | Enclosed in double quotes (`"Hello"`).
-| **Integer**  | Whole numbers (`42`, `-15`).
-| **Float**  | Decimal numbers (`3.14`, `-0.99`).
-| **Boolean**  | `true`, `false`.
-|===
+* **String**: Enclosed in double quotes (`"Hello"`).
+* **Integer**: Whole numbers (`42`, `-15`).
+* **Floating Point Numbers**: Decimal numbers (`3.14`, `-0.99`).
+* **Boolean**: `true`, `false`.
 
 === 2. Data Types
 
-==== 2.1 Primitive Types
+* Primitive Types:
+** Integers: `i8`, `i16`, `i32`, `i64` (signed) and `u8`, `u16`, `u32`, `u64` (unsigned).
+** Floating Points: `f32`, `f64`.
+** Booleans: `bool`.
+** Characters: `char`.
+** Strings: `str`.
+** Void: `void` (for functions without a return).
+* Nullability: Only pointers (`*T`) can be `null`.
 
-[cols="~,~"]
-|===
-| Name | Description
-
-| **int**  | Represents integers.
-| **float**  | Represents floating-point numbers.
-| **string**  | Represents sequences of characters.
-| **bool**  | Represents boolean values (`true` or `false`).
-|===
-
-==== 2.2 Custom Types
-
-[cols="~,~"]
-|===
-| Name | Description
-
-| **struct** | Define complex data structures.
-|===
-
-Example:
-
-[source, lift]
-----
-struct User {
-    name: string,
-    age: int,
-    isActive: bool
-};
-----
 
 === 3. Variable Declaration & Assignment
 
-==== 3.1 Mutable Variables
+==== 3.2. Variable Declaration
 
-Declared using `let`.
-Can be reassigned after initialization.
-
-Syntax:
+`let` for immutable variables and `var` for mutable variables.
 
 [source, lift]
 ----
-let identifier = expression;
-----
-
-Example:
-
-[source, lift]
-----
-let age = 30;
-age = 31;
-----
-
-==== 3.2 Immutable Variables
-
-Declared using `const`.
-Cannot be reassigned after initialization.
-
-Syntax:
-
-[source, lift]
-----
-const identifier = expression;
-----
-
-Example:
-
-[source, lift]
-----
-const pi = 3.14159;
+let x: i32 = 10;        // Immutable
+var y: f64 = 20.5;      // Mutable
 ----
 
 === 4. Expressions & Operators
@@ -175,156 +122,102 @@ const pi = 3.14159;
 
 `&` (AND), `|` (OR), `^` (XOR), `~` (NOT)
 
-=== 5. Control Flow
+=== 5. Functions
 
-==== 5.1 Conditional Statements
-
-Use `if`, `else if`, and `else` for conditional logic.
-
-Syntax:
+* Function Declaration: Declared with `func`, with parameter types and return types specified.
+* Return Type: Use `->` to specify the return type.
+* Optional Return Type: `T?` for functions that can return `null`.
 
 [source, lift]
 ----
-if (condition) {
-    // code block
-} else if (condition) {
-    // code block
-} else {
-    // code block
-}
-----
-
-==== 5.2 Loops
-
-===== 5.2.1 For Loop
-
-Iterate over ranges, arrays, or collections.
-
-Syntax:
-
-[source, lift]
-----
-for variable in iterable {
-    // code block
-}
-----
-
-Example:
-
-[source, lift]
-----
-for i in 0..10 {
-    println(i);
-}
-----
-
-===== 5.2.2 While Loop
-
-Executes as long as the condition is true.
-
-Syntax:
-
-[source, lift]
-----
-while (condition) {
-    // code block
-}
-----
-
-=== 6. Functions
-
-==== 6.1 Function Declaration
-
-Functions are declared using `func`, followed by a name, parameters, and return type (optional).
-
-Syntax:
-
-[source, lift]
-----
-func functionName(parameter: Type) -> ReturnType {
-    // code block
-}
-----
-
-Example:
-
-[source, lift]
-----
-func add(a: int, b: int) -> int {
+func add(a: i32, b: i32) -> i32 {
     return a + b;
 }
+
+func maybe_divide(a: f64, b: f64) -> f64? {
+    if b == 0.0 {
+        return null;
+    }
+    return a / b;
+}
 ----
 
-==== 6.2 Anonymous Functions
+=== 6. Control Flow
 
-Use the `=>` syntax for shorter function expressions.
-
-Syntax:
+* If/Else Statements: Standard conditional control.
+* Loops: Support for `for` (range-based) and `while` loops.
 
 [source, lift]
 ----
-let identifier = (parameters) => expression;
+func main() {
+    if x > 10 {
+        println("x is large");
+    } else if x == 10 {
+        println("x is 10");
+    } else {
+        println("x is small");
+    }
+
+    for i in 0..10 {         // Exclusive range
+        println(i);
+    }
+
+    var count = 5;
+    while count > 0 {
+        println(count);
+        count -= 1;
+    }
+}
 ----
 
-Example:
+=== 7. Error Handling (Optional Types)
+
+* Optional Return Type: Functions can return `T?` (e.g., `i32?`), which can be either a value or `null`.
+* Null Checks: Use `if x != null` to check for `null`.
 
 [source, lift]
 ----
-let multiply = (x: int, y: int) => x * y;
-----
-
-=== 7. Pattern Matching
-
-==== 7.1 Match Statement
-
-Supports matching values against patterns.
-
-Syntax:
-
-[source, lift]
-----
-match expression {
-    pattern1 => action1,
-    pattern2 => action2,
-    _ => defaultAction
-};
-----
-
-Example:
-
-[source, lift]
-----
-match status {
-    "active" => println("User is active"),
-    "inactive" => println("User is inactive"),
-    _ => println("Unknown status")
-};
+func main() {
+    let result = maybe_divide(10.0, 0.0);
+    if result != null {
+        println("Result: {}", result);
+    } else {
+        println("Error: Division by zero");
+    }
+}
 ----
 
 === 8. Data Structures
 
-==== 8.1 Structs
-
-Define custom data types with named fields.
-
-Syntax:
+* Struct Declaration: Define custom types.
+* Simple Methods: Functions can be defined within structs.
 
 [source, lift]
 ----
-struct StructName {
-    field1: Type,
-    field2: Type,
-    ...
-};
+struct Person {
+    name: str,
+    age: i32,
+}
+
+func main() {
+    let person = Person { name: "Alice", age: 30 };
+    println("Name: {}", person.name);
+}
 ----
 
-Example:
+=== 9. Pointers
+
+* Pointers (`*T`): Used for direct memory manipulation.
+* Nullable Pointers: Pointers can be `null`, enabling optional pointer behavior.
 
 [source, lift]
 ----
-struct Product {
-    name: string,
-    price: float,
-    stock: int
-};
+func main() {
+    let ptr: *i32 = null;
+    if ptr != null {
+        println("Pointer is valid");
+    } else {
+        println("Pointer is null");
+    }
+}
 ----
