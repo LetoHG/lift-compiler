@@ -93,6 +93,8 @@ impl Parser {
             TokenKind::Return => self.parse_return_statement(),
             TokenKind::Func => self.parse_function_statement(),
             TokenKind::If => self.parse_if_statement(),
+            TokenKind::While => self.parse_while_loop_statement(),
+            TokenKind::For => self.parse_for_loop_statement(),
             TokenKind::LeftBrace => self.parse_compound_statement(),
             TokenKind::SingleLineComment(_) => todo!("Decide if comments need to be in AST"),
             TokenKind::MultiLineComment(_) => todo!("Decide if comments need to be in AST"),
@@ -242,7 +244,7 @@ impl Parser {
             return None;
         }
         let else_keyword = self.consume_expected(TokenKind::Else).clone();
-        let else_branch = self.parse_statement();
+        let else_branch = self.parse_compound_statement();
         Some(ASTElseStatement {
             else_keyword: else_keyword,
             else_branch: Box::new(else_branch),
@@ -267,10 +269,32 @@ impl Parser {
     fn parse_if_statement(&mut self) -> ASTStatement {
         let keyword = self.consume_expected(TokenKind::If).clone();
         let condition = self.parse_expression();
-        let then_branch = self.parse_statement();
+        let then_branch = self.parse_compound_statement();
         let else_branch = self.consume_optional_else_statement();
 
         ASTStatement::conditional(keyword, condition, then_branch, else_branch)
+    }
+
+    fn parse_while_loop_statement(&mut self) -> ASTStatement {
+        let keyword = self.consume_expected(TokenKind::While).clone();
+        let condition = self.parse_expression();
+        let body = self.parse_compound_statement();
+
+        ASTStatement::while_loop(keyword, condition, body)
+    }
+
+    fn parse_for_loop_statement(&mut self) -> ASTStatement {
+        let keyword = self.consume_expected(TokenKind::For).clone();
+        let loop_variable = self.consume_expected(TokenKind::Identifier).clone();
+        self.consume_expected(TokenKind::In);
+        let range_start = self.parse_expression();
+        self.consume_expected(TokenKind::Dot);
+        self.consume_expected(TokenKind::Dot);
+        let range_end = self.parse_expression();
+
+        let body = self.parse_compound_statement();
+
+        ASTStatement::for_loop(keyword, loop_variable, (range_start, range_end), body)
     }
 
     fn parse_expression_statement(&mut self) -> ASTStatement {

@@ -82,6 +82,7 @@ pub enum TokenKind {
 
     MinusRightAngleBracket, // -> for return types
     Comma,
+    Dot,
     SemiColon,
     Colon,
 
@@ -155,6 +156,7 @@ impl fmt::Display for TokenKind {
             TokenKind::RightBracket => write!(f, "]"),
             TokenKind::MinusRightAngleBracket => write!(f, "->"),
             TokenKind::Comma => write!(f, ","),
+            TokenKind::Dot => write!(f, "."),
             TokenKind::SemiColon => write!(f, ";"),
             TokenKind::Colon => write!(f, ":"),
             TokenKind::Whitespace => write!(f, "Whitespace"),
@@ -363,10 +365,10 @@ impl Lexer {
         let mut dot_found = false;
 
         while let Some(c) = self.current_char() {
-            if oct_format && c.is_digit(8) {
+            if !dot_found && oct_format && c.is_digit(8) {
                 self.consume();
                 integer_part = integer_part * 8 + c.to_digit(8).unwrap() as i64;
-            } else if hex_format && c.is_digit(16) {
+            } else if !dot_found && hex_format && c.is_digit(16) {
                 self.consume();
                 integer_part = integer_part * 16 + c.to_digit(16).unwrap() as i64;
             } else if c.is_digit(10) {
@@ -377,7 +379,11 @@ impl Lexer {
                     fractional_part = fractional_part * 10 + c.to_digit(10).unwrap() as i64;
                     divisior_for_fraction *= 10;
                 }
-            } else if Self::is_decimal_dot(&c) {
+            } else if !oct_format
+                && !hex_format
+                && Self::is_decimal_dot(&c)
+                && self.peek(1).unwrap().is_digit(10)
+            {
                 self.consume();
                 if dot_found {
                     break;
@@ -516,6 +522,7 @@ impl Lexer {
             '{' => TokenKind::LeftBrace,
             '}' => TokenKind::RightBrace,
             ',' => TokenKind::Comma,
+            '.' => TokenKind::Dot,
             ';' => TokenKind::SemiColon,
             ':' => TokenKind::Colon,
             _ => TokenKind::Bad,

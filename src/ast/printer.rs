@@ -68,10 +68,11 @@ impl ASTVisitor for ASTTreePrinter {
         ASTVisitor::do_visit_expression(self, &statement.expr);
         self.decrease_indentation();
     }
+
     fn visit_let_statement(&mut self, statement: &super::ASTLetStatement) {
         self.print(
             &format!(
-                "{}  Declaration: {}{}",
+                "{}  Declaration(Let): {}{}",
                 Self::LET_STATEMENT_ICON,
                 color::Fg(Self::TEXT_COLOR),
                 &statement.identifier.span.literal
@@ -82,6 +83,41 @@ impl ASTVisitor for ASTTreePrinter {
         ASTVisitor::do_visit_expression(self, &statement.initializer);
         self.decrease_indentation();
     }
+
+    fn visit_var_statement(&mut self, statement: &super::ASTVarStatement) {
+        self.print(
+            &format!(
+                "{}  Declaration(Var): {}{}",
+                Self::LET_STATEMENT_ICON,
+                color::Fg(Self::TEXT_COLOR),
+                &statement.identifier.span.literal
+            ),
+            &Self::LET_STATEMENT_COLOR,
+        );
+        self.increase_indentation();
+        ASTVisitor::do_visit_expression(self, &statement.initializer);
+        self.decrease_indentation();
+    }
+
+    fn visit_if_statement(&mut self, statement: &super::ASTIfStatement) {
+        self.print("If:", &color::Blue);
+        self.increase_indentation();
+        self.visit_expression(&statement.condition);
+        self.print("Then:", &Self::TEXT_COLOR);
+        self.increase_indentation();
+        self.visit_statement(&statement.then_branch);
+        self.decrease_indentation();
+        if let Some(else_branch) = &statement.else_branch {
+            self.print("Else:", &Self::TEXT_COLOR);
+            self.increase_indentation();
+            self.visit_statement(&else_branch.else_branch);
+        }
+        self.decrease_indentation();
+    }
+
+    fn visit_for_loop_statement(&mut self, statement: &super::ASTForStatement) {}
+    fn visit_while_loop_statement(&mut self, statement: &super::ASTWhileStatement) {}
+
     fn visit_funtion_statement(&mut self, function: &super::ASTFunctionStatement) {
         self.print(
             &format!(
@@ -118,6 +154,31 @@ impl ASTVisitor for ASTTreePrinter {
         self.decrease_indentation();
     }
 
+    fn visit_expression(&mut self, expr: &super::ASTExpression) {
+        // self.print(
+        //     &format!("{}  Expression:", Self::EXPR_ICON),
+        //     &Self::EXPR_COLOR,
+        // );
+        // self.increase_indentation();
+        ASTVisitor::do_visit_expression(self, &expr);
+        // self.decrease_indentation();
+    }
+
+    fn visit_assignment_expression(&mut self, expr: &super::ASTAssignmentExpression) {
+        self.print("Assignment:", &color::Blue);
+        self.print(
+            &format!(
+                "{}  Assignment: {}{}",
+                nerd_font_symbols::md::MD_EQUAL,
+                color::Fg(Self::OPERATOR_COLOR),
+                expr.identifier.span.literal
+            ),
+            &Self::TEXT_COLOR,
+        );
+        self.increase_indentation();
+        self.visit_expression(&expr.expr);
+    }
+
     fn visit_function_call_expression(&mut self, expr: &super::ASTFunctionCallExpression) {
         self.print(
             &format!(
@@ -135,14 +196,11 @@ impl ASTVisitor for ASTTreePrinter {
         self.decrease_indentation();
     }
 
-    fn visit_expression(&mut self, expr: &super::ASTExpression) {
-        // self.print(
-        //     &format!("{}  Expression:", Self::EXPR_ICON),
-        //     &Self::EXPR_COLOR,
-        // );
-        // self.increase_indentation();
-        ASTVisitor::do_visit_expression(self, &expr);
-        // self.decrease_indentation();
+    fn visit_variable_expression(&mut self, expr: &super::ASTVariableExpression) {
+        self.print(
+            &format!("{}  Variable: {}", Self::VARIABLE_ICON, expr.identifier()),
+            &Self::TEXT_COLOR,
+        );
     }
 
     fn visit_unary_expression(&mut self, expr: &super::ASTUnaryExpression) {
@@ -178,6 +236,18 @@ impl ASTVisitor for ASTTreePrinter {
         self.decrease_indentation();
     }
 
+    fn visit_parenthesised_expression(&mut self, expr: &super::ASTParenthesizedExpression) {
+        self.print(
+            &format!(
+                "{}  Parenthesized:",
+                nerd_font_symbols::md::MD_CODE_PARENTHESES
+            ),
+            &color::Magenta,
+        );
+        self.increase_indentation();
+        self.visit_expression(&expr.expr);
+    }
+
     fn visit_binary_operator(&mut self, op: &super::ASTBinaryOperator) {
         let var_name = format!(
             "Operator: {}",
@@ -202,24 +272,6 @@ impl ASTVisitor for ASTTreePrinter {
         self.print(&var_name, &color::Yellow);
     }
 
-    fn visit_parenthesised_expression(&mut self, expr: &super::ASTParenthesizedExpression) {
-        self.print(
-            &format!(
-                "{}  Parenthesized:",
-                nerd_font_symbols::md::MD_CODE_PARENTHESES
-            ),
-            &color::Magenta,
-        );
-        self.increase_indentation();
-        self.visit_expression(&expr.expr);
-    }
-
-    fn visit_variable_expression(&mut self, expr: &super::ASTVariableExpression) {
-        self.print(
-            &format!("{}  Variable: {}", Self::VARIABLE_ICON, expr.identifier()),
-            &Self::TEXT_COLOR,
-        );
-    }
     fn visit_error(&mut self, span: &super::TextSpan) {
         self.print(&format!("Error: {:?}", span), &color::Red);
     }
@@ -230,37 +282,6 @@ impl ASTVisitor for ASTTreePrinter {
 
     fn visit_float(&mut self, float: &f64) {
         self.print(&format!("Float: {}", float), &Self::TEXT_COLOR);
-    }
-
-    fn visit_assignment_expression(&mut self, expr: &super::ASTAssignmentExpression) {
-        self.print("Assignment:", &color::Blue);
-        self.print(
-            &format!(
-                "{}  Assignment: {}{}",
-                nerd_font_symbols::md::MD_EQUAL,
-                color::Fg(Self::OPERATOR_COLOR),
-                expr.identifier.span.literal
-            ),
-            &Self::TEXT_COLOR,
-        );
-        self.increase_indentation();
-        self.visit_expression(&expr.expr);
-    }
-
-    fn visit_if_statement(&mut self, statement: &super::ASTIfStatement) {
-        self.print("If:", &color::Blue);
-        self.increase_indentation();
-        self.visit_expression(&statement.condition);
-        self.print("Then:", &Self::TEXT_COLOR);
-        self.increase_indentation();
-        self.visit_statement(&statement.then_branch);
-        self.decrease_indentation();
-        if let Some(else_branch) = &statement.else_branch {
-            self.print("Else:", &Self::TEXT_COLOR);
-            self.increase_indentation();
-            self.visit_statement(&else_branch.else_branch);
-        }
-        self.decrease_indentation();
     }
 }
 
@@ -340,6 +361,7 @@ impl ASTVisitor for ASTHiglightPrinter {
     fn visit_statement(&mut self, statement: &super::ASTStatement) {
         self.do_visit_statement(statement);
     }
+
     fn visit_return_statement(&mut self, statement: &super::ASTReturnStatement) {
         self.print_with_indent(&format!("{}return", Fg(Self::LET_COLOR)));
         self.add_whitespace();
@@ -348,6 +370,17 @@ impl ASTVisitor for ASTHiglightPrinter {
 
     fn visit_let_statement(&mut self, statement: &super::ASTLetStatement) {
         self.print_with_indent(&format!("{}let", Fg(Self::LET_COLOR)));
+        self.add_whitespace();
+        self.visit_idenifier(&statement.identifier.span.literal);
+        self.add_whitespace();
+        self.print(&format!("{}=", Fg(Self::TEXT_COLOR)));
+        self.add_whitespace();
+        self.visit_expression(&statement.initializer);
+        self.add_newline();
+    }
+
+    fn visit_var_statement(&mut self, statement: &super::ASTVarStatement) {
+        self.print_with_indent(&format!("{}var", Fg(Self::LET_COLOR)));
         self.add_whitespace();
         self.visit_idenifier(&statement.identifier.span.literal);
         self.add_whitespace();
@@ -391,6 +424,10 @@ impl ASTVisitor for ASTHiglightPrinter {
         self.add_newline();
     }
 
+    fn visit_for_loop_statement(&mut self, statement: &super::ASTForStatement) {}
+
+    fn visit_while_loop_statement(&mut self, statement: &super::ASTWhileStatement) {}
+
     fn visit_funtion_statement(&mut self, function: &super::ASTFunctionStatement) {
         self.print_with_indent(&format!(
             "{}func {}{}{}(",
@@ -418,6 +455,16 @@ impl ASTVisitor for ASTHiglightPrinter {
         self.add_newline();
     }
 
+    fn visit_assignment_expression(&mut self, expr: &super::ASTAssignmentExpression) {
+        self.print_with_indent(&format!(
+            "{}{}{} = ",
+            Fg(Self::VARIABLE_COLOR),
+            expr.identifier.span.literal,
+            Fg(Self::TEXT_COLOR)
+        ));
+        self.visit_expression(&expr.expr);
+    }
+
     fn visit_function_call_expression(&mut self, expr: &super::ASTFunctionCallExpression) {
         self.print(&format!(
             "{}{}{}(",
@@ -435,16 +482,6 @@ impl ASTVisitor for ASTHiglightPrinter {
         }
         self.print(&format!("{})", Fg(Self::TEXT_COLOR)));
         self.add_whitespace();
-    }
-
-    fn visit_assignment_expression(&mut self, expr: &super::ASTAssignmentExpression) {
-        self.print_with_indent(&format!(
-            "{}{}{} = ",
-            Fg(Self::VARIABLE_COLOR),
-            expr.identifier.span.literal,
-            Fg(Self::TEXT_COLOR)
-        ));
-        self.visit_expression(&expr.expr);
     }
 
     fn visit_variable_expression(&mut self, expr: &super::ASTVariableExpression) {
@@ -482,13 +519,6 @@ impl ASTVisitor for ASTHiglightPrinter {
         self.print(&format!("{})", Fg(Self::TEXT_COLOR)));
     }
 
-    fn visit_integer(&mut self, integer: &i64) {
-        self.print(&format!("{}{}", Fg(Self::INTEGER_COLOR), integer));
-    }
-    fn visit_float(&mut self, float: &f64) {
-        self.print(&format!("{}{}", Fg(Self::FLOAT_COLOR), float));
-    }
-
     fn visit_binary_operator(&mut self, op: &super::ASTBinaryOperator) {
         self.print(&format!(
             "{}{}",
@@ -511,5 +541,12 @@ impl ASTVisitor for ASTHiglightPrinter {
                 super::ASTBinaryOperatorKind::BitwiseXOR => "^",
             }
         ));
+    }
+
+    fn visit_integer(&mut self, integer: &i64) {
+        self.print(&format!("{}{}", Fg(Self::INTEGER_COLOR), integer));
+    }
+    fn visit_float(&mut self, float: &f64) {
+        self.print(&format!("{}{}", Fg(Self::FLOAT_COLOR), float));
     }
 }

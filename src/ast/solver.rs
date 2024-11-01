@@ -69,6 +69,11 @@ impl ASTVisitor for ASTSolver {
         self.add_identifier_to_scope(&statement.identifier.span.literal, self.result.unwrap());
     }
 
+    fn visit_var_statement(&mut self, statement: &super::ASTVarStatement) {
+        self.visit_expression(&statement.initializer);
+        self.add_identifier_to_scope(&statement.identifier.span.literal, self.result.unwrap());
+    }
+
     fn visit_if_statement(&mut self, statement: &super::ASTIfStatement) {
         self.visit_expression(&statement.condition);
         let condition = self.result.unwrap();
@@ -79,6 +84,10 @@ impl ASTVisitor for ASTSolver {
             self.visit_statement(&else_branch.else_branch);
         }
     }
+
+    fn visit_for_loop_statement(&mut self, statement: &super::ASTForStatement) {}
+
+    fn visit_while_loop_statement(&mut self, statement: &super::ASTWhileStatement) {}
 
     fn visit_funtion_statement(&mut self, function: &super::ASTFunctionStatement) {
         self.functions
@@ -167,12 +176,12 @@ impl ASTVisitor for ASTSolver {
         self.visit_expression(&expr.expr);
     }
 
+    fn visit_binary_operator(&mut self, op: &ASTBinaryOperator) {}
+
     fn visit_integer(&mut self, integer: &i64) {
         self.result = Some(integer.clone() as f64);
     }
     fn visit_float(&mut self, float: &f64) {
         self.result = Some(float.clone());
     }
-
-    fn visit_binary_operator(&mut self, op: &ASTBinaryOperator) {}
 }

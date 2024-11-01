@@ -59,6 +59,11 @@ impl ASTVisitor for SymbolChecker {
         self.visit_expression(&statement.initializer);
     }
 
+    fn visit_var_statement(&mut self, statement: &super::ASTVarStatement) {
+        self.add_identifier_to_scope(&statement.identifier.span.literal);
+        self.visit_expression(&statement.initializer);
+    }
+
     fn visit_compound_statement(&mut self, statement: &super::ASTCompoundStatement) {
         self.enter_scope(Vec::new());
         for statement in statement.statements.iter() {
@@ -73,6 +78,10 @@ impl ASTVisitor for SymbolChecker {
             self.visit_statement(&else_branch.else_branch);
         }
     }
+
+    fn visit_for_loop_statement(&mut self, statement: &super::ASTForStatement) {}
+
+    fn visit_while_loop_statement(&mut self, statement: &super::ASTWhileStatement) {}
 
     fn visit_funtion_statement(&mut self, function: &super::ASTFunctionStatement) {
         self.add_identifier_to_scope(&function.identifier.span.literal);
@@ -101,6 +110,8 @@ impl ASTVisitor for SymbolChecker {
         // };
         self.leave_scope();
     }
+
+    fn visit_assignment_expression(&mut self, expr: &super::ASTAssignmentExpression) {}
 
     fn visit_function_call_expression(&mut self, expr: &super::ASTFunctionCallExpression) {
         if !self.check_identifier_in_scope(&expr.identifier().to_string()) {

@@ -42,9 +42,11 @@ pub trait ASTVisitor {
             ASTStatementKind::Return(statement) => self.visit_return_statement(statement),
             ASTStatementKind::FuncDecl(statement) => self.visit_funtion_statement(statement),
             ASTStatementKind::Let(statement) => self.visit_let_statement(statement),
-            ASTStatementKind::Var(statement) => todo!(),
+            ASTStatementKind::Var(statement) => self.visit_var_statement(statement),
             ASTStatementKind::Compound(statement) => self.visit_compound_statement(statement),
             ASTStatementKind::If(statement) => self.visit_if_statement(statement),
+            ASTStatementKind::For(statement) => self.visit_for_loop_statement(statement),
+            ASTStatementKind::While(statement) => self.visit_while_loop_statement(statement),
         }
     }
 
@@ -66,35 +68,41 @@ pub trait ASTVisitor {
     fn visit_statement(&mut self, statement: &ASTStatement) {
         self.do_visit_statement(statement);
     }
-    fn visit_return_statement(&mut self, statement: &ASTReturnStatement);
-    fn visit_let_statement(&mut self, statement: &ASTLetStatement);
     fn visit_compound_statement(&mut self, statement: &ASTCompoundStatement) {
         for statement in statement.statements.iter() {
             self.visit_statement(statement);
         }
     }
+
+    fn visit_return_statement(&mut self, statement: &ASTReturnStatement);
+
+    fn visit_let_statement(&mut self, statement: &ASTLetStatement);
+    fn visit_var_statement(&mut self, statement: &ASTVarStatement);
+
     fn visit_if_statement(&mut self, statement: &ASTIfStatement);
+    fn visit_for_loop_statement(&mut self, statement: &ASTForStatement);
+    fn visit_while_loop_statement(&mut self, statement: &ASTWhileStatement);
+
     fn visit_funtion_statement(&mut self, function: &ASTFunctionStatement) {
         if let ASTStatementKind::Compound(statement) = &function.body.kind {
             self.visit_compound_statement(statement);
         }
     }
 
-    fn visit_function_call_expression(&mut self, expr: &ASTFunctionCallExpression);
-    fn visit_assignment_expression(&mut self, expr: &ASTAssignmentExpression) {}
-
     fn visit_expression(&mut self, expr: &ASTExpression) {
         self.do_visit_expression(expr);
     }
 
+    fn visit_assignment_expression(&mut self, expr: &ASTAssignmentExpression);
+    fn visit_function_call_expression(&mut self, expr: &ASTFunctionCallExpression);
     fn visit_variable_expression(&mut self, expr: &ASTVariableExpression);
+
     fn visit_unary_expression(&mut self, expr: &ASTUnaryExpression);
     fn visit_binary_expression(&mut self, expr: &ASTBinaryExpression);
     fn visit_parenthesised_expression(&mut self, expr: &ASTParenthesizedExpression);
     fn visit_binary_operator(&mut self, op: &ASTBinaryOperator);
 
     fn visit_error(&mut self, span: &TextSpan) {}
-
     fn visit_integer(&mut self, integer: &i64);
     fn visit_float(&mut self, float: &f64);
 }
@@ -108,6 +116,8 @@ enum ASTStatementKind {
     Compound(ASTCompoundStatement),
     FuncDecl(ASTFunctionStatement),
     If(ASTIfStatement),
+    While(ASTWhileStatement),
+    For(ASTForStatement),
 }
 
 #[derive(Clone)]
@@ -158,6 +168,21 @@ pub struct ASTIfStatement {
     condition: ASTExpression,
     then_branch: Box<ASTStatement>,
     else_branch: Option<ASTElseStatement>,
+}
+
+#[derive(Clone)]
+pub struct ASTWhileStatement {
+    keyword: Token,
+    condition: ASTExpression,
+    body: Box<ASTStatement>,
+}
+
+#[derive(Clone)]
+pub struct ASTForStatement {
+    keyword: Token,
+    loop_variable: Token,
+    range: (ASTExpression, ASTExpression),
+    body: Box<ASTStatement>,
 }
 
 #[derive(Clone)]
@@ -219,6 +244,32 @@ impl ASTStatement {
                 condition,
                 then_branch: Box::new(then_branch),
                 else_branch,
+            }),
+        }
+    }
+
+    fn while_loop(keyword: Token, condition: ASTExpression, body: ASTStatement) -> Self {
+        Self {
+            kind: ASTStatementKind::While(ASTWhileStatement {
+                keyword,
+                condition,
+                body: Box::new(body),
+            }),
+        }
+    }
+
+    fn for_loop(
+        keyword: Token,
+        loop_variable: Token,
+        range: (ASTExpression, ASTExpression),
+        body: ASTStatement,
+    ) -> Self {
+        Self {
+            kind: ASTStatementKind::For(ASTForStatement {
+                keyword,
+                loop_variable,
+                range,
+                body: Box::new(body),
             }),
         }
     }
@@ -452,6 +503,11 @@ mod test {
         Integer(i64),
         Variable(String),
         Let(String, TokenKind),
+        Var(String, TokenKind),
+        Assign(String),
+        If,
+        While,
+        For(String),
         Return,
         FuncDecl(Vec<(String, TokenKind)>),
         BinaryExpr(TokenKind),
@@ -517,7 +573,43 @@ mod test {
             self.visit_expression(&statement.initializer);
         }
 
-        fn visit_if_statement(&mut self, statement: &super::ASTIfStatement) {}
+        fn visit_var_statement(&mut self, statement: &super::ASTVarStatement) {
+            self.actual.push(TestASTNode::Var(
+                statement.identifier.span.literal.clone(),
+                statement.data_type.kind.clone(),
+            ));
+            self.visit_expression(&statement.initializer);
+        }
+
+        fn visit_if_statement(&mut self, statement: &super::ASTIfStatement) {
+            self.actual.push(TestASTNode::If);
+            self.visit_expression(&statement.condition);
+            if let super::ASTStatementKind::Compound(body) = &statement.then_branch.kind {
+                self.visit_compound_statement(body);
+            }
+            if let Some(else_branch) = statement.else_branch {
+                self.visit_statement(&else_branch.else_branch);
+            }
+        }
+
+        fn visit_for_loop_statement(&mut self, statement: &super::ASTForStatement) {
+            self.actual.push(TestASTNode::For(
+                statement.loop_variable.span.literal.clone(),
+            ));
+            self.visit_expression(&statement.range.0);
+            self.visit_expression(&statement.range.1);
+            if let super::ASTStatementKind::Compound(body) = &statement.body.kind {
+                self.visit_compound_statement(body);
+            }
+        }
+
+        fn visit_while_loop_statement(&mut self, statement: &super::ASTWhileStatement) {
+            self.actual.push(TestASTNode::While);
+            self.visit_expression(&statement.condition);
+            if let super::ASTStatementKind::Compound(body) = &statement.body.kind {
+                self.visit_compound_statement(body);
+            }
+        }
 
         fn visit_funtion_statement(&mut self, function: &super::ASTFunctionStatement) {
             let mut args: Vec<(String, TokenKind)> = Vec::new();
@@ -539,6 +631,12 @@ mod test {
             }
         }
 
+        fn visit_assignment_expression(&mut self, expr: &super::ASTAssignmentExpression) {
+            self.actual
+                .push(TestASTNode::Assign(expr.identifier.span.literal.clone()));
+            self.visit_expression(&expr.expr);
+        }
+
         fn visit_function_call_expression(&mut self, expr: &super::ASTFunctionCallExpression) {
             self.actual.push(TestASTNode::FunctionCall(
                 expr.identifier.span.literal.clone(),
@@ -551,6 +649,11 @@ mod test {
         fn visit_variable_expression(&mut self, expr: &super::ASTVariableExpression) {
             self.actual
                 .push(TestASTNode::Variable(expr.identifier.span.literal.clone()));
+        }
+
+        fn visit_unary_expression(&mut self, expr: &super::ASTUnaryExpression) {
+            self.actual
+                .push(TestASTNode::UnaryExpr(expr.operator.token.kind.clone()));
         }
 
         fn visit_binary_expression(&mut self, expr: &super::ASTBinaryExpression) {
@@ -573,11 +676,6 @@ mod test {
 
         fn visit_float(&mut self, float: &f64) {
             self.actual.push(TestASTNode::Floating(float.clone()));
-        }
-
-        fn visit_unary_expression(&mut self, expr: &super::ASTUnaryExpression) {
-            self.actual
-                .push(TestASTNode::UnaryExpr(expr.operator.token.kind.clone()));
         }
     }
 
@@ -690,6 +788,55 @@ mod test {
             TestASTNode::Integer(1),
             TestASTNode::Integer(2),
             TestASTNode::Integer(6),
+        ];
+
+        let verifier = ASTVerifier::new(input, expected_ast);
+        verifier.verify();
+    }
+
+    #[test]
+    fn should_parse_for_loop() {
+        let input = "\
+        var a: u32 = 0;
+        for i in 0..10 {
+            a += i;
+        }
+        ";
+        let expected_ast = vec![
+            TestASTNode::Var("a".to_string(), TokenKind::U32),
+            TestASTNode::Integer(0),
+            TestASTNode::For("i".to_string()),
+            TestASTNode::Integer(0),
+            TestASTNode::Integer(10),
+            TestASTNode::Assign("a".to_string()),
+            TestASTNode::BinaryExpr(TokenKind::PlusEqual),
+            TestASTNode::Variable("a".to_string()),
+            TestASTNode::Variable("i".to_string()),
+        ];
+
+        let verifier = ASTVerifier::new(input, expected_ast);
+        verifier.verify();
+    }
+
+    #[test]
+    fn should_parse_while_loop() {
+        let input = "\
+        var a: i32 = 5;
+        while a > 0 {
+            a -= 1;
+        }
+        ";
+        let expected_ast = vec![
+            TestASTNode::Var("a".to_string(), TokenKind::I32),
+            TestASTNode::Integer(5),
+            TestASTNode::While,
+            TestASTNode::BinaryExpr(TokenKind::RightAngleBracket),
+            TestASTNode::Variable("a".to_string()),
+            TestASTNode::Integer(0),
+            TestASTNode::Assign("a".to_string()),
+            TestASTNode::BinaryExpr(TokenKind::MinusEqual),
+            TestASTNode::Variable("a".to_string()),
+            TestASTNode::Integer(1),
         ];
 
         let verifier = ASTVerifier::new(input, expected_ast);
