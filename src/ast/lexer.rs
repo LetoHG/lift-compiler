@@ -276,7 +276,7 @@ impl Lexer {
     }
 
     fn is_identifier_start(c: &char) -> bool {
-        c.is_alphabetic()
+        c.is_alphabetic() || *c == '_'
     }
 
     fn is_whitespace(c: &char) -> bool {
@@ -520,5 +520,134 @@ impl Lexer {
             ':' => TokenKind::Colon,
             _ => TokenKind::Bad,
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::{Lexer, TextSpan, Token, TokenKind};
+
+    fn verify(input: &str, expected_tokens: Vec<Token>) {
+        let mut lexer = Lexer::new(input.to_string());
+        let mut lexed_tokens = Vec::new();
+        while let Some(token) = lexer.next_token() {
+            if token.kind == TokenKind::Whitespace {
+                continue;
+            }
+            println!("{:?}", token);
+            lexed_tokens.push(token);
+        }
+
+        assert_eq!(
+            expected_tokens.len(),
+            lexed_tokens.len(),
+            "Expected {} tokens but found {} ",
+            expected_tokens.len(),
+            lexed_tokens.len()
+        );
+
+        for (ac, ex) in lexed_tokens.iter().zip(expected_tokens.iter()) {
+            println!("Ac: {:?}  Ex: {:?}", ac, ex);
+            assert_eq!(
+                ac.kind, ex.kind,
+                "Tokens do not match. Expected {:?} but found {:?}",
+                ex.kind, ac.kind
+            );
+
+            if ex.span.literal.len() > 0 {
+                assert_eq!(
+                    ac.span.literal, *ex.span.literal,
+                    "Tokens do not match. Expected {:?} but found {:?}",
+                    ex.span.literal, ac.span.literal
+                );
+            }
+        }
+    }
+
+    fn token(kind: TokenKind, literal: &str) -> Token {
+        Token {
+            kind,
+            span: TextSpan {
+                start: 0,
+                end: 0,
+                literal: literal.to_string(),
+            },
+        }
+    }
+
+    #[test]
+    fn lex_basic_let_statements() {
+        let input = "let a: u8 = 10;";
+        let expected_tokens = vec![
+            token(TokenKind::Let, ""),
+            token(TokenKind::Identifier, "a"),
+            token(TokenKind::Colon, ""),
+            token(TokenKind::U8, ""),
+            token(TokenKind::Equal, ""),
+            token(TokenKind::Integer(10), ""),
+            token(TokenKind::SemiColon, ""),
+            token(TokenKind::Eof, ""),
+        ];
+
+        verify(input, expected_tokens);
+    }
+
+    #[test]
+    fn lex_basic_var_statements() {
+        let input = "var _abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ_1234567890: f32 = 10.156464 + 7 * (27 / 5.1);";
+        let expected_tokens = vec![
+            token(TokenKind::Var, ""),
+            token(
+                TokenKind::Identifier,
+                "_abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ_1234567890",
+            ),
+            token(TokenKind::Colon, ""),
+            token(TokenKind::F32, ""),
+            token(TokenKind::Equal, ""),
+            token(TokenKind::Floating(10.156464), ""),
+            token(TokenKind::Plus, ""),
+            token(TokenKind::Integer(7), "7"),
+            token(TokenKind::Astrisk, ""),
+            token(TokenKind::LeftParen, ""),
+            token(TokenKind::Integer(27), "27"),
+            token(TokenKind::Slash, ""),
+            token(TokenKind::Floating(5.1), "5.1"),
+            token(TokenKind::RightParen, ""),
+            token(TokenKind::SemiColon, ""),
+            token(TokenKind::Eof, ""),
+        ];
+
+        verify(input, expected_tokens);
+    }
+
+    #[test]
+    fn lex_basic_func_decl_statements() {
+        let input = "func _my_func(a: str, b: u8) -> str {
+            return a;
+        }
+        ";
+        let expected_tokens = vec![
+            token(TokenKind::Func, ""),
+            token(TokenKind::Identifier, "_my_func"),
+            token(TokenKind::LeftParen, ""),
+            token(TokenKind::Identifier, "a"),
+            token(TokenKind::Colon, ""),
+            token(TokenKind::Str, ""),
+            token(TokenKind::Comma, ""),
+            token(TokenKind::Identifier, "b"),
+            token(TokenKind::Colon, ""),
+            token(TokenKind::U8, ""),
+            token(TokenKind::RightParen, ""),
+            token(TokenKind::MinusRightAngleBracket, ""),
+            token(TokenKind::Str, ""),
+            token(TokenKind::LeftBrace, ""),
+            token(TokenKind::Return, ""),
+            token(TokenKind::Identifier, "a"),
+            token(TokenKind::SemiColon, ""),
+            token(TokenKind::RightBrace, ""),
+            token(TokenKind::Eof, ""),
+        ];
+
+        verify(input, expected_tokens);
     }
 }

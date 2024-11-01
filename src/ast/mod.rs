@@ -451,9 +451,9 @@ mod test {
         Floating(f64),
         Integer(i64),
         Variable(String),
-        Let(String),
+        Let(String, TokenKind),
         Return,
-        FuncDecl(Vec<String>),
+        FuncDecl(Vec<(String, TokenKind)>),
         BinaryExpr(TokenKind),
         UnaryExpr(TokenKind),
         ParenExpr,
@@ -510,16 +510,26 @@ mod test {
         }
 
         fn visit_let_statement(&mut self, statement: &super::ASTLetStatement) {
-            self.actual
-                .push(TestASTNode::Let(statement.identifier.span.literal.clone()));
+            self.actual.push(TestASTNode::Let(
+                statement.identifier.span.literal.clone(),
+                statement.data_type.kind.clone(),
+            ));
             self.visit_expression(&statement.initializer);
         }
 
+        fn visit_if_statement(&mut self, statement: &super::ASTIfStatement) {}
+
         fn visit_funtion_statement(&mut self, function: &super::ASTFunctionStatement) {
-            let mut args = Vec::new();
-            args.push(function.identifier.span.literal.clone());
+            let mut args: Vec<(String, TokenKind)> = Vec::new();
+            args.push((
+                function.identifier.span.literal.clone(),
+                function.return_type.kind.clone(),
+            ));
             for arg in function.arguments.iter() {
-                args.push(arg.identifier.span.literal.clone());
+                args.push((
+                    arg.identifier.span.literal.clone(),
+                    arg.data_type.kind.clone(),
+                ));
             }
 
             self.actual.push(TestASTNode::FuncDecl(args));
@@ -573,8 +583,11 @@ mod test {
 
     #[test]
     fn should_parse_let_statement() {
-        let input = "let a = 10;";
-        let expected_ast = vec![TestASTNode::Let("a".to_string()), TestASTNode::Integer(10)];
+        let input = "let a: u8 = 10;";
+        let expected_ast = vec![
+            TestASTNode::Let("a".to_string(), TokenKind::U8),
+            TestASTNode::Integer(10),
+        ];
 
         let verifier = ASTVerifier::new(input, expected_ast);
         verifier.verify();
@@ -582,11 +595,11 @@ mod test {
 
     #[test]
     fn should_parse_return_statement() {
-        let input = "let a = 7;
+        let input = "let a: i32 = 7;
                            return a + 10;
                            ";
         let expected_ast = vec![
-            TestASTNode::Let("a".to_string()),
+            TestASTNode::Let("a".to_string(), TokenKind::I32),
             TestASTNode::Integer(7),
             TestASTNode::Return,
             TestASTNode::BinaryExpr(TokenKind::Plus),
@@ -613,9 +626,9 @@ mod test {
 
     #[test]
     fn should_parse_complex_binary_statement() {
-        let input = "let a = (7.2 - 10) / 2 + 3.1415 * 8;";
+        let input = "let a: f64 = (7.2 - 10) / 2 + 3.1415 * 8;";
         let expected_ast = vec![
-            TestASTNode::Let("a".to_string()),
+            TestASTNode::Let("a".to_string(), TokenKind::F64),
             TestASTNode::BinaryExpr(TokenKind::Plus),
             TestASTNode::BinaryExpr(TokenKind::Slash),
             TestASTNode::ParenExpr,
@@ -634,13 +647,13 @@ mod test {
 
     #[test]
     fn should_parse_function_declaration() {
-        let input = "func f(a, b, c) { return a + b + c; }";
+        let input = "func f(a: u8, b: i16, c: u64) -> u64 { return a + b + c; }";
         let expected_ast = vec![
             TestASTNode::FuncDecl(vec![
-                "f".to_string(), // function name
-                "a".to_string(),
-                "b".to_string(),
-                "c".to_string(),
+                ("f".to_string(), TokenKind::U64), // function name
+                ("a".to_string(), TokenKind::U8),
+                ("b".to_string(), TokenKind::I16),
+                ("c".to_string(), TokenKind::U64),
             ]),
             TestASTNode::Return,
             TestASTNode::BinaryExpr(TokenKind::Plus),
@@ -657,15 +670,15 @@ mod test {
     #[test]
     fn should_parse_function_call() {
         let input = "\
-        func f(a, b, c) { return a + b + c; }
-        f(1, 2, 6)
+        func f(a: u8, b: i16, c: u64) -> u64 { return a + b + c; }
+        f(1, 2, 6);
         ";
         let expected_ast = vec![
             TestASTNode::FuncDecl(vec![
-                "f".to_string(), // function name
-                "a".to_string(),
-                "b".to_string(),
-                "c".to_string(),
+                ("f".to_string(), TokenKind::U64), // function name
+                ("a".to_string(), TokenKind::U8),
+                ("b".to_string(), TokenKind::I16),
+                ("c".to_string(), TokenKind::U64),
             ]),
             TestASTNode::Return,
             TestASTNode::BinaryExpr(TokenKind::Plus),
