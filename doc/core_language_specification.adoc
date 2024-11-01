@@ -1,4 +1,4 @@
-= LIFT Compiler
+== LIFT Core Language Specification
 :author: Herwig
 :email: <herwig.m.letosky@gmail.com>
 :revdate: 2024-10-23
@@ -8,32 +8,9 @@
 
 ++++
 <p align="center">
-  <img width="450" src="./doc/resources/lift_crow_text.png">
+  <img width="450" height="100" src="./resources/lift_crow_text.png">
 </p>
 ++++
-
-== Motivation
-
-When I decided to learn Rust, I initially struggled to come up with project ideas and find the motivation to start coding. Coming from a C++ background, I thought it would be interesting to try implementing a compiler in Rust. After all, compilers are the tools that have enabled my journey in programming, and creating one could deepen my understanding of both languages.
-
-== Roadmap for Implementation
-
-=== Phase 1: Basic Language Infrastructure
-
-. ✅ Lexer: Create a lexer to tokenize basic elements like keywords, identifiers, literals, and symbols.
-. 🔄 Parser: Develop a recursive-descent parser to handle:
-** 🔄 Module declarations, function definitions, and expressions.
-** 🔄 Basic control flow (if/else, for, while).
-. 🔄 AST (Abstract Syntax Tree): Define structures for the AST to represent language constructs.
-
-=== Phase 2: Core Language Functionality
-
-. 📝 Type Checker: Implement basic type-checking rules to ensure variable types, function signatures, and return types match.
-. 📝 Basic Expression Evaluation: Handle integer, float, and boolean expressions, including arithmetic operations and conditionals.
-. 📝 Control Flow: Implement if/else, for, and while loop handling within the AST.
-. 📝 Variables and Scopes: Implement symbol tables for local variables, global variables, and scoping rules.
-
-== LIFT Core Language Specification
 
 === 1. Basic Syntax and Structure
 
