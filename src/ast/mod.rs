@@ -30,8 +30,10 @@ impl Ast {
 
     pub fn visualize(&self) {
         let mut printer = ASTTreePrinter::new();
-        println!("AST:");
+        let decoration = "=".repeat(80);
+        println!("{decoration}\nAST:\n{decoration}");
         self.visit(&mut printer);
+        println!("{decoration}\n");
     }
 }
 

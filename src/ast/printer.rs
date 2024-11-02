@@ -39,7 +39,7 @@ impl ASTTreePrinter {
     fn print(&self, text: &str, text_color: &dyn color::Color) {
         // println!("{}├─ {}", "│ ".repeat(self.indentation), text);
         println!(
-            "{}└─ {}{}{}",
+            "│{}└─ {}{}{}",
             " ".repeat(self.indentation),
             color::Fg(text_color),
             text,
@@ -80,6 +80,14 @@ impl ASTVisitor for ASTTreePrinter {
             &Self::LET_STATEMENT_COLOR,
         );
         self.increase_indentation();
+        self.print(
+            &format!(
+                "DataType: {}{}",
+                Fg(Self::TEXT_COLOR),
+                statement.data_type.span.literal
+            ),
+            &Self::TEXT_COLOR,
+        );
         ASTVisitor::do_visit_expression(self, &statement.initializer);
         self.decrease_indentation();
     }
@@ -95,6 +103,14 @@ impl ASTVisitor for ASTTreePrinter {
             &Self::LET_STATEMENT_COLOR,
         );
         self.increase_indentation();
+        self.print(
+            &format!(
+                "DataType: {}{}",
+                Fg(Self::TEXT_COLOR),
+                statement.data_type.span.literal
+            ),
+            &Self::TEXT_COLOR,
+        );
         ASTVisitor::do_visit_expression(self, &statement.initializer);
         self.decrease_indentation();
     }
@@ -115,8 +131,37 @@ impl ASTVisitor for ASTTreePrinter {
         self.decrease_indentation();
     }
 
-    fn visit_for_loop_statement(&mut self, statement: &super::ASTForStatement) {}
-    fn visit_while_loop_statement(&mut self, statement: &super::ASTWhileStatement) {}
+    fn visit_for_loop_statement(&mut self, statement: &super::ASTForStatement) {
+        self.print(
+            &format!("For: {}", statement.loop_variable.span.literal),
+            &color::Blue,
+        );
+        self.increase_indentation();
+        self.print("From:", &Self::TEXT_COLOR);
+        self.increase_indentation();
+        self.visit_expression(&statement.range.0);
+        self.decrease_indentation();
+        self.print("To:", &Self::TEXT_COLOR);
+        self.increase_indentation();
+        self.visit_expression(&statement.range.1);
+        self.decrease_indentation();
+        self.print("Body:", &Self::TEXT_COLOR);
+        self.increase_indentation();
+        self.visit_statement(&statement.body);
+        self.decrease_indentation();
+    }
+    fn visit_while_loop_statement(&mut self, statement: &super::ASTWhileStatement) {
+        self.print("While:", &color::Blue);
+        self.increase_indentation();
+        self.print("Condition:", &Self::TEXT_COLOR);
+        self.increase_indentation();
+        self.visit_expression(&statement.condition);
+        self.decrease_indentation();
+        self.print("Body:", &Self::TEXT_COLOR);
+        self.increase_indentation();
+        self.visit_statement(&statement.body);
+        self.decrease_indentation();
+    }
 
     fn visit_funtion_statement(&mut self, function: &super::ASTFunctionStatement) {
         self.print(
@@ -135,10 +180,11 @@ impl ASTVisitor for ASTTreePrinter {
         for arg in function.arguments.iter() {
             self.print(
                 &format!(
-                    "{}  Argument: {}{}",
+                    "{}  Argument: {}{} ({})",
                     Self::FUNC_STATEMENT_ICON,
                     color::Fg(Self::TEXT_COLOR),
-                    &arg.identifier.span.literal
+                    &arg.identifier.span.literal,
+                    &arg.data_type.span.literal
                 ),
                 &Self::TEXT_COLOR,
             );
@@ -314,7 +360,17 @@ impl ASTHiglightPrinter {
     }
 
     pub fn print_result(&self) {
-        println!("Highlighted Source:\n{}{}", self.result, Fg(White));
+        let decoration = "=".repeat(80) + "\n";
+        println!(
+            "{decoration}Highlighted Source:\n{decoration}{}\n{}{decoration}",
+            self.result
+                .lines()
+                .enumerate()
+                .map(|(i, line)| format!("{:3} │ {}", i, line))
+                .collect::<Vec<String>>()
+                .join("\n"),
+            Fg(White)
+        );
     }
 
     fn add_whitespace(&mut self) {
@@ -323,6 +379,10 @@ impl ASTHiglightPrinter {
 
     fn add_newline(&mut self) {
         self.print("\n");
+    }
+
+    fn add_semicolon(&mut self) {
+        self.print(";");
     }
 
     fn increase_indentation(&mut self) {
@@ -366,16 +426,24 @@ impl ASTVisitor for ASTHiglightPrinter {
         self.print_with_indent(&format!("{}return", Fg(Self::LET_COLOR)));
         self.add_whitespace();
         self.visit_expression(&statement.expr);
+        self.add_semicolon();
+        self.add_newline();
     }
 
     fn visit_let_statement(&mut self, statement: &super::ASTLetStatement) {
         self.print_with_indent(&format!("{}let", Fg(Self::LET_COLOR)));
         self.add_whitespace();
         self.visit_idenifier(&statement.identifier.span.literal);
+        self.print(&format!(
+            ": {}{}",
+            Fg(Self::TYPE_COLOR),
+            statement.data_type.span.literal
+        ));
         self.add_whitespace();
         self.print(&format!("{}=", Fg(Self::TEXT_COLOR)));
         self.add_whitespace();
         self.visit_expression(&statement.initializer);
+        self.add_semicolon();
         self.add_newline();
     }
 
@@ -383,10 +451,16 @@ impl ASTVisitor for ASTHiglightPrinter {
         self.print_with_indent(&format!("{}var", Fg(Self::LET_COLOR)));
         self.add_whitespace();
         self.visit_idenifier(&statement.identifier.span.literal);
+        self.print(&format!(
+            ": {}{}",
+            Fg(Self::TYPE_COLOR),
+            statement.data_type.span.literal
+        ));
         self.add_whitespace();
         self.print(&format!("{}=", Fg(Self::TEXT_COLOR)));
         self.add_whitespace();
         self.visit_expression(&statement.initializer);
+        self.add_semicolon();
         self.add_newline();
     }
 
@@ -397,7 +471,6 @@ impl ASTVisitor for ASTHiglightPrinter {
         for statement in statement.statements.iter() {
             self.visit_statement(statement);
         }
-        self.add_newline();
         self.decrease_indentation();
         self.print_with_indent(&format!("{}{}", Fg(Self::TEXT_COLOR), '}'));
     }
@@ -405,7 +478,7 @@ impl ASTVisitor for ASTHiglightPrinter {
     fn visit_if_statement(&mut self, statement: &super::ASTIfStatement) {
         self.print_with_indent(&format!(
             "{}if{} ",
-            Fg(Self::FUNC_COLOR),
+            Fg(Self::KEYWORD_COLOR),
             Fg(Self::TEXT_COLOR),
         ));
         self.visit_expression(&statement.condition);
@@ -416,7 +489,7 @@ impl ASTVisitor for ASTHiglightPrinter {
         if let Some(else_branch) = &statement.else_branch {
             self.print(&format!(
                 "{} else{} ",
-                Fg(Self::FUNC_COLOR),
+                Fg(Self::KEYWORD_COLOR),
                 Fg(Self::TEXT_COLOR),
             ));
             self.visit_statement(&else_branch.else_branch);
@@ -424,9 +497,34 @@ impl ASTVisitor for ASTHiglightPrinter {
         self.add_newline();
     }
 
-    fn visit_for_loop_statement(&mut self, statement: &super::ASTForStatement) {}
+    fn visit_for_loop_statement(&mut self, statement: &super::ASTForStatement) {
+        self.print_with_indent(&format!(
+            "{}for{} {} in",
+            Fg(Self::KEYWORD_COLOR),
+            Fg(Self::TEXT_COLOR),
+            statement.loop_variable.span.literal
+        ));
+        self.add_whitespace();
+        self.visit_expression(&statement.range.0);
+        self.print("..");
+        self.visit_expression(&statement.range.1);
+        self.add_whitespace();
+        self.visit_statement(&statement.body);
+        self.add_newline();
+    }
 
-    fn visit_while_loop_statement(&mut self, statement: &super::ASTWhileStatement) {}
+    fn visit_while_loop_statement(&mut self, statement: &super::ASTWhileStatement) {
+        self.print_with_indent(&format!(
+            "{}while{}",
+            Fg(Self::KEYWORD_COLOR),
+            Fg(Self::TEXT_COLOR),
+        ));
+        self.add_whitespace();
+        self.visit_expression(&statement.condition);
+        self.add_whitespace();
+        self.visit_statement(&statement.body);
+        self.add_newline();
+    }
 
     fn visit_funtion_statement(&mut self, function: &super::ASTFunctionStatement) {
         self.print_with_indent(&format!(
@@ -442,9 +540,11 @@ impl ASTVisitor for ASTHiglightPrinter {
                 self.add_whitespace();
             }
             self.print(&format!(
-                "{}{}",
+                "{}{}: {}{}",
                 Fg(Self::TEXT_COLOR),
-                arg.identifier.span.literal
+                arg.identifier.span.literal,
+                Fg(Self::TYPE_COLOR),
+                arg.data_type.span.literal,
             ));
         }
 
@@ -463,6 +563,8 @@ impl ASTVisitor for ASTHiglightPrinter {
             Fg(Self::TEXT_COLOR)
         ));
         self.visit_expression(&expr.expr);
+        self.add_semicolon();
+        self.add_newline();
     }
 
     fn visit_function_call_expression(&mut self, expr: &super::ASTFunctionCallExpression) {
@@ -481,7 +583,6 @@ impl ASTVisitor for ASTHiglightPrinter {
             self.visit_expression(arg);
         }
         self.print(&format!("{})", Fg(Self::TEXT_COLOR)));
-        self.add_whitespace();
     }
 
     fn visit_variable_expression(&mut self, expr: &super::ASTVariableExpression) {
