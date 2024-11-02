@@ -9,15 +9,28 @@ pub struct SymbolChecker {
     scopes: Vec<Vec<String>>,
     functions: HashMap<String, Vec<String>>,
     diagnostics: DiagnosticsColletionCell,
+    pub collect_global_symbols: bool,
 }
 
 impl SymbolChecker {
-    pub fn new(diagnostics: DiagnosticsColletionCell) -> Self {
+    pub fn new(/* ast: &super::Ast, */ diagnostics: DiagnosticsColletionCell) -> Self {
+        // let mut global_scope: Vec<String> = Vec::new();
+
+        // for statement in ast.statements {
+        //     match statement.kind {
+        //         super::ASTStatementKind::Let(astlet_statement) => {}
+        //         super::ASTStatementKind::Var(astvar_statement) => todo!(),
+        //         super::ASTStatementKind::FuncDecl(astfunction_statement) => todo!(),
+        //         _ => (),
+        //     }
+        // }
+
         Self {
             active_scope: 0,
             scopes: vec![Vec::new()],
             functions: HashMap::new(),
             diagnostics,
+            collect_global_symbols: true,
         }
     }
 
@@ -50,6 +63,49 @@ impl SymbolChecker {
 }
 
 impl ASTVisitor<()> for SymbolChecker {
+    fn visit_statement(&mut self, statement: &super::ASTStatement) -> () {
+        if self.collect_global_symbols {
+            match &statement.kind {
+                super::ASTStatementKind::FuncDecl(function) => {
+                    self.add_identifier_to_scope(&function.identifier.span.literal);
+
+                    let mut arguments_names: Vec<String> = Vec::new();
+                    // add arguments to scope of local variable call
+                    for arg in function.arguments.iter() {
+                        arguments_names.push(arg.identifier.span.literal.clone());
+                    }
+                    self.functions.insert(
+                        function.identifier.span.literal.clone(),
+                        arguments_names.clone(),
+                    );
+                }
+                super::ASTStatementKind::Let(statement) => self.visit_let_statement(statement),
+                super::ASTStatementKind::Var(statement) => self.visit_var_statement(statement),
+                _ => (),
+            };
+        } else {
+            match &statement.kind {
+                super::ASTStatementKind::Expr(expr) => self.visit_expression(expr),
+                super::ASTStatementKind::Return(statement) => {
+                    self.visit_return_statement(statement)
+                }
+                super::ASTStatementKind::FuncDecl(statement) => {
+                    self.visit_funtion_statement(statement)
+                }
+                super::ASTStatementKind::Let(statement) => self.visit_let_statement(statement),
+                super::ASTStatementKind::Var(statement) => self.visit_var_statement(statement),
+                super::ASTStatementKind::Compound(statement) => {
+                    self.visit_compound_statement(statement)
+                }
+                super::ASTStatementKind::If(statement) => self.visit_if_statement(statement),
+                super::ASTStatementKind::For(statement) => self.visit_for_loop_statement(statement),
+                super::ASTStatementKind::While(statement) => {
+                    self.visit_while_loop_statement(statement)
+                }
+            };
+        }
+    }
+
     fn visit_return_statement(&mut self, statement: &super::ASTReturnStatement) {
         self.visit_expression(&statement.expr);
     }

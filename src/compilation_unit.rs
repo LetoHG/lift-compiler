@@ -50,6 +50,14 @@ impl CompilationUnit {
         );
         Self::check_diagstics(&source_text, &diagnostics_colletion)?;
 
+        symbol_checker.collect_global_symbols = false;
+        ast.visit(&mut symbol_checker);
+        println!(
+            "Indentifier Errors: {}",
+            diagnostics_colletion.borrow_mut().diagnostics.len()
+        );
+        Self::check_diagstics(&source_text, &diagnostics_colletion)?;
+
         Ok(Self {
             ast,
             diagnostics_colletion,
