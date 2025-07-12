@@ -1,0 +1,12 @@
+func sum_until(upper : i32, threshold : i32) -> i32 {
+    let sum : i32 = 0;
+    for i in 0..100 {
+        sum += i;
+        if sum > threshold {
+            return i;
+        }
+    }
+    return 0;
+}
+
+return sum_until(20, 27);

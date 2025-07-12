@@ -26,14 +26,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "lift-compiler"
-version = "0.1.0"
-dependencies = [
- "nerd-font-symbols",
- "termion",
-]
-
-[[package]]
 name = "nerd-font-symbols"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -70,4 +62,12 @@ dependencies = [
  "libredox",
  "numtoa",
  "redox_termios",
+]
+
+[[package]]
+name = "zeno-compiler"
+version = "0.1.0"
+dependencies = [
+ "nerd-font-symbols",
+ "termion",
 ]

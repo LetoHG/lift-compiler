@@ -3,6 +3,7 @@ mod compilation_unit;
 mod diagnostics;
 mod source_text;
 
+use std::env;
 use std::fs;
 
 use crate::compilation_unit::CompilationUnit;
@@ -17,8 +18,10 @@ func a(arg1, arg2) {
 
 return a(0x02, 7.67)
 ";
+    let args: Vec<String> = env::args().collect();
 
-    let content = fs::read_to_string("math.txt").unwrap();
+    let content = fs::read_to_string(args.get(1).unwrap()).unwrap();
+    // let content = fs::read_to_string("examples/demo.zn").unwrap();
 
     let compilation_unit = CompilationUnit::compile(content.as_str())?;
     compilation_unit.run();

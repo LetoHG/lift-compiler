@@ -1,4 +1,4 @@
-== LIFT Core Language Specification
+== zeno Core Language Specification
 :author: Herwig
 :email: <herwig.m.letosky@gmail.com>
 :revdate: 2024-10-23
@@ -8,7 +8,7 @@
 
 ++++
 <p align="center">
-  <img width="450" height="100" src="./resources/lift_crow_text.png">
+  <img width="450" height="100" src="./resources/zeno_logo.png">
 </p>
 ++++
 
@@ -18,13 +18,13 @@
 * Comments: Support single-line (`//`) and multi-line (`/* ... */`) comments.
 * Semicolons (`;`): Statements end with a semicolon.
 
-[source, lift]
+[source, zeno]
 ----
-// File: main.lift
+// File: main.zeno
 module main;
 
 func main() -> i32 {
-    println("Hello, LIFT!");
+    println("Hello, zeno!");
     return 0;
 }
 ----
@@ -36,7 +36,7 @@ func main() -> i32 {
 * They must start with a letter (`a-z, A-Z`) or underscore (`_`), followed by letters, digits (`0-9`), or underscores.
 * Identifiers are case-sensitive.
 
-[source, lift]
+[source, zeno]
 ----
 var myVar = 10;
 let _count = 5;
@@ -82,7 +82,7 @@ Reserved words that cannot be used as identifiers.
 
 `let` for immutable variables and `var` for mutable variables.
 
-[source, lift]
+[source, zeno]
 ----
 let x: i32 = 10;        // Immutable
 var y: f64 = 20.5;      // Mutable
@@ -112,7 +112,7 @@ var y: f64 = 20.5;      // Mutable
 * Return Type: Use `->` to specify the return type.
 * Optional Return Type: `T?` for functions that can return `null`.
 
-[source, lift]
+[source, zeno]
 ----
 func add(a: i32, b: i32) -> i32 {
     return a + b;
@@ -131,7 +131,7 @@ func maybe_divide(a: f64, b: f64) -> f64? {
 * If/Else Statements: Standard conditional control.
 * Loops: Support for `for` (range-based) and `while` loops.
 
-[source, lift]
+[source, zeno]
 ----
 func main() {
     if x > 10 {
@@ -159,7 +159,7 @@ func main() {
 * Optional Return Type: Functions can return `T?` (e.g., `i32?`), which can be either a value or `null`.
 * Null Checks: Use `if x != null` to check for `null`.
 
-[source, lift]
+[source, zeno]
 ----
 func main() {
     let result = maybe_divide(10.0, 0.0);
@@ -176,7 +176,7 @@ func main() {
 * Struct Declaration: Define custom types.
 * Simple Methods: Functions can be defined within structs.
 
-[source, lift]
+[source, zeno]
 ----
 struct Person {
     name: str,
@@ -194,7 +194,7 @@ func main() {
 * Pointers (`*T`): Used for direct memory manipulation.
 * Nullable Pointers: Pointers can be `null`, enabling optional pointer behavior.
 
-[source, lift]
+[source, zeno]
 ----
 func main() {
     let ptr: *i32 = null;
