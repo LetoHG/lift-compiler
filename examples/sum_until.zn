@@ -1,3 +1,8 @@
+let g_const : f64 = 3.1415;
+var g_var : bool = 1;
+
+// g_var = 5;
+
 func sum_until(upper : i32, threshold : i32) -> i32 {
     let sum : i32 = 0;
     for i in 0..100 {
@@ -9,4 +14,4 @@ func sum_until(upper : i32, threshold : i32) -> i32 {
     return 0;
 }
 
-return sum_until(20, 27);
+ return sum_until(20, 27);

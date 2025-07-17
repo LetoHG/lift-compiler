@@ -81,7 +81,73 @@ impl ASTVisitor<()> for SymbolChecker {
                 }
                 super::ASTStatementKind::Let(statement) => self.visit_let_statement(statement),
                 super::ASTStatementKind::Var(statement) => self.visit_var_statement(statement),
-                _ => (),
+                super::ASTStatementKind::Expr(statement) => {
+                    self.diagnostics.borrow_mut().report_error(
+                        format!("Unexpecetd statement expr in global scope!"),
+                        super::TextSpan {
+                            start: 0,
+                            end: 0,
+                            literal: "NOTHING".to_string(),
+                        },
+                    )
+                }
+                super::ASTStatementKind::Return(statement) => {
+                    self.diagnostics.borrow_mut().report_error(
+                        format!("Unexpecetd statement return in global scope!"),
+                        statement.return_keyword.span.clone(),
+                    )
+                }
+                super::ASTStatementKind::Compound(statement) => {
+                    self.diagnostics.borrow_mut().report_error(
+                        format!("Unexpecetd statement compound in global scope!"),
+                        super::TextSpan {
+                            start: 0,
+                            end: 0,
+                            literal: "NOTHING".to_string(),
+                        },
+                    )
+                }
+                super::ASTStatementKind::If(statement) => {
+                    self.diagnostics.borrow_mut().report_error(
+                        format!("Unexpecetd statement if in global scope!"),
+                        super::TextSpan {
+                            start: 0,
+                            end: 0,
+                            literal: "NOTHING".to_string(),
+                        },
+                    )
+                }
+                super::ASTStatementKind::While(statement) => {
+                    self.diagnostics.borrow_mut().report_error(
+                        format!("Unexpecetd statement while in global scope!"),
+                        super::TextSpan {
+                            start: 0,
+                            end: 0,
+                            literal: "NOTHING".to_string(),
+                        },
+                    )
+                }
+                super::ASTStatementKind::For(statement) => {
+                    self.diagnostics.borrow_mut().report_error(
+                        format!("Unexpecetd statement for in global scope!"),
+                        super::TextSpan {
+                            start: 0,
+                            end: 0,
+                            literal: "NOTHING".to_string(),
+                        },
+                    )
+                }
+
+                _ => {
+                    self.diagnostics.borrow_mut().report_error(
+                        format!("Unexpecetd statement in global scope!"),
+                        super::TextSpan {
+                            start: 0,
+                            end: 0,
+                            literal: "NOTHING".to_string(),
+                        },
+                    );
+                }
             };
         } else {
             match &statement.kind {

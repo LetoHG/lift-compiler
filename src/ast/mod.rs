@@ -143,6 +143,7 @@ pub struct ASTVarStatement {
 
 #[derive(Clone)]
 pub struct ASTReturnStatement {
+    return_keyword: Token,
     expr: ASTExpression,
 }
 #[derive(Clone)]
@@ -208,9 +209,12 @@ impl ASTStatement {
         }
     }
 
-    fn return_statement(expr: ASTExpression) -> Self {
+    fn return_statement(return_keyword: Token, expr: ASTExpression) -> Self {
         Self {
-            kind: ASTStatementKind::Return(ASTReturnStatement { expr }),
+            kind: ASTStatementKind::Return(ASTReturnStatement {
+                return_keyword,
+                expr,
+            }),
         }
     }
     fn let_statement(identifier: Token, data_type: Token, initializer: ASTExpression) -> Self {

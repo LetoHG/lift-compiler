@@ -6,14 +6,14 @@ func main() {
 func max(arg1 : i32, arg2 : u8) -> i32 {
   let ret : i32 = 0;
 
-  return add_with_while_loop(arg1, arg2);
+//  return add_with_while_loop(arg1, arg2);
 
   for i in 0..10 {
     if i > 5 {
-      return i;
+ //     return i;
     }
   }
-  return ret;
+ // return ret;
 
   if arg1 > arg2 {
     arg1 += 5;
@@ -32,4 +32,4 @@ func add_with_while_loop(a: u32, b: u32) {
 }
 
 
-return main();
+// return main();
