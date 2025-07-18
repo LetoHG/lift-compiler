@@ -1,3 +1,4 @@
+use crate::ast::symbol_table;
 use crate::{ast, diagnostics};
 use ast::lexer::Token;
 use ast::printer::ASTHiglightPrinter;
@@ -41,9 +42,11 @@ impl CompilationUnit {
         );
         Self::check_diagstics(&source_text, &diagnostics_colletion)?;
 
-        let mut symbol_checker =
-            symbol_checker::SymbolChecker::new(Rc::clone(&diagnostics_colletion));
-        ast.visit(&mut symbol_checker);
+        let mut symbol_table = symbol_table::SymbolTable::new(Rc::clone(&diagnostics_colletion));
+        symbol_table.build(&ast);
+        // let mut symbol_checker =
+        //     symbol_checker::SymbolChecker::new(Rc::clone(&diagnostics_colletion));
+        // ast.visit(&mut symbol_checker);
         println!(
             "Indentifier Errors: {}",
             diagnostics_colletion.borrow_mut().diagnostics.len()

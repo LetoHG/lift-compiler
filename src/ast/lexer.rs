@@ -196,6 +196,9 @@ impl Token {
     fn new(kind: TokenKind, span: TextSpan) -> Self {
         Self { kind, span }
     }
+    pub(crate) fn name(&self) -> String {
+        self.span.literal.clone()
+    }
 }
 
 pub struct Lexer {
