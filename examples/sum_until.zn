@@ -9,4 +9,6 @@ func sum_until(upper : i32, threshold : i32) -> i32 {
     return 0;
 }
 
-return sum_until(20, 27);
+func main() {
+    return sum_until(20, 27);
+}

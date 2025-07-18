@@ -1,6 +1,7 @@
 use std::{collections::HashMap, ops::Not};
 
 use super::{
+    lexer::{TextSpan, TokenKind},
     ASTBinaryOperator, ASTBinaryOperatorKind, ASTFunctionStatement, ASTReturnStatement, ASTVisitor,
 };
 
@@ -17,6 +18,26 @@ impl ASTSolver {
             scopes: vec![Scope::new()],
             result: None,
             functions: HashMap::new(),
+        }
+    }
+
+    pub fn solve(&mut self) {
+        if let Some(entry_point) = self.functions.get("main") {
+            self.result = None;
+            self.visit_function_call_expression(&super::ASTFunctionCallExpression {
+                identifier: super::lexer::Token {
+                    kind: TokenKind::Identifier,
+                    span: TextSpan {
+                        start: 0,
+                        end: 0,
+                        literal: "main".to_string(),
+                    },
+                },
+                arguments: vec![],
+            });
+            self.print_result();
+        } else {
+            println!("No entry point to program. `func main()` is missing");
         }
     }
 

@@ -59,7 +59,8 @@ impl CompilationUnit {
     pub fn run(&self) {
         let mut solver = ASTSolver::new();
         self.ast.visit(&mut solver);
-        solver.print_result();
+        // solver.print_result();
+        solver.solve();
     }
 
     fn check_diagstics(
