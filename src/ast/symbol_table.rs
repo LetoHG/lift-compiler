@@ -33,31 +33,40 @@ impl Symbol {
 }
 
 #[derive(Debug)]
+struct FunctionContext {
+    name: String,
+    return_type: String,
+}
+
+#[derive(Debug)]
 enum Pass {
     CollectSymbols,
     TypeCheck,
 }
 
 pub struct SymbolTable {
-    symbol_table: HashMap<String, Symbol>,
     global_scope: HashMap<String, Symbol>,
     scopes: Vec<HashMap<String, Symbol>>,
     pass: Pass,
     diagnostics: DiagnosticsColletionCell,
+    function_stack: Vec<FunctionContext>,
 }
 
 impl SymbolTable {
     pub fn new(diagnostics: DiagnosticsColletionCell) -> Self {
         Self {
-            symbol_table: HashMap::new(),
             global_scope: HashMap::new(),
             scopes: Vec::new(),
             pass: Pass::CollectSymbols,
             diagnostics,
+            function_stack: Vec::new(),
         }
     }
     pub fn build(&mut self, ast: &super::Ast) {
         ast.visit(self);
+        if !self.diagnostics.borrow().diagnostics.is_empty() {
+            return;
+        }
         self.pass = Pass::TypeCheck;
         ast.visit(self);
     }
@@ -112,6 +121,22 @@ impl ASTVisitor<()> for SymbolTable {
             }
             Pass::TypeCheck => {
                 self.visit_expression(&statement.expr);
+                let actual = "void";
+                let expeceted = &self.function_stack.last().unwrap().return_type;
+                if actual != expeceted {
+                    self.diagnostics.borrow_mut().report_error(
+                        format!(
+                            "Expected return type of type {} but found {}",
+                            expeceted, actual
+                        ),
+                        // TODO(letohg): [2025-07-18] track source_text location on ASTReturnStatement
+                        super::lexer::TextSpan {
+                            start: 0,
+                            end: 0,
+                            literal: "return".to_string(),
+                        },
+                    );
+                }
             }
         }
     }
@@ -232,17 +257,19 @@ impl ASTVisitor<()> for SymbolTable {
                     // arguments_names.push(arg.identifier.span.literal.clone());
                     arguments_names.push(arg.data_type.name());
                 }
-                self.symbol_table.insert(
-                    function.identifier.name(),
-                    Symbol::Function(FunctionInfo {
-                        name: function.identifier.name(),
-                        parameters: arguments_names.clone(),
-                        return_type: function.return_type.span.literal.clone(),
-                    }),
-                );
+                self.declare_global_identifier(Symbol::Function(FunctionInfo {
+                    name: function.identifier.name(),
+                    parameters: arguments_names.clone(),
+                    return_type: function.return_type.span.literal.clone(),
+                }));
             }
             Pass::TypeCheck => {
+                self.function_stack.push(FunctionContext {
+                    name: function.identifier.name(),
+                    return_type: function.return_type.name(),
+                });
                 self.visit_statement(&function.body);
+                self.function_stack.pop();
             }
         }
     }
@@ -265,24 +292,20 @@ impl ASTVisitor<()> for SymbolTable {
         match self.pass {
             Pass::CollectSymbols => {}
             Pass::TypeCheck => {
-                if !self
-                    .symbol_table
-                    .contains_key(&expr.identifier().to_string())
-                {
+                if self.lookup(&expr.identifier().to_string()).is_none() {
                     self.diagnostics
                         .borrow_mut()
                         .report_undefined_function(expr.identifier.span.clone());
                     return;
                 }
 
-                let expected_number_of_arguments =
-                    match self.symbol_table.get(expr.identifier()).unwrap() {
-                        Symbol::Function(func) => func.parameters.len(),
-                        _ => {
-                            println!("Not a callable!");
-                            return;
-                        }
-                    };
+                let expected_number_of_arguments = match self.lookup(expr.identifier()).unwrap() {
+                    Symbol::Function(func) => func.parameters.len(),
+                    _ => {
+                        println!("Not a callable!");
+                        return;
+                    }
+                };
 
                 if expected_number_of_arguments != expr.arguments.len() {
                     self.diagnostics

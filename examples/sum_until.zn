@@ -9,7 +9,6 @@ func sum_until(upper : i32, threshold : i32) -> i32 {
     return 0;
 }
 
-return fun();
 
 func main() {
     unknown1(a, c + 3);
