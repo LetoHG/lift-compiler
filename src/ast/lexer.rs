@@ -355,10 +355,13 @@ impl Lexer {
         let mut oct_format = false;
         let mut hex_format = false;
         if self.current_char().unwrap() == '0' {
-            self.consume();
-            oct_format = true;
+            if self.peek(1).unwrap().is_digit(8) {
+                self.consume();
+                oct_format = true;
+            }
 
             if self.current_char().unwrap() == 'x' {
+                self.consume();
                 self.consume();
                 hex_format = true;
                 oct_format = false;
