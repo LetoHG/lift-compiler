@@ -83,7 +83,7 @@ impl ASTVisitor<()> for SymbolChecker {
 
     fn visit_while_loop_statement(&mut self, statement: &super::ASTWhileStatement) {}
 
-    fn visit_funtion_statement(&mut self, function: &super::ASTFunctionStatement) {
+    fn visit_function_statement(&mut self, function: &super::ASTFunctionStatement) {
         self.add_identifier_to_scope(&function.identifier.span.literal);
 
         let mut arguments_names: Vec<String> = Vec::new();

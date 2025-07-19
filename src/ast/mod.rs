@@ -44,7 +44,7 @@ pub trait ASTVisitor<T> {
         match &statement.kind {
             ASTStatementKind::Expr(expr) => self.visit_expression(expr),
             ASTStatementKind::Return(statement) => self.visit_return_statement(statement),
-            ASTStatementKind::FuncDecl(statement) => self.visit_funtion_statement(statement),
+            ASTStatementKind::FuncDecl(statement) => self.visit_function_statement(statement),
             ASTStatementKind::Let(statement) => self.visit_let_statement(statement),
             ASTStatementKind::Var(statement) => self.visit_var_statement(statement),
             ASTStatementKind::Compound(statement) => self.visit_compound_statement(statement),
@@ -89,7 +89,7 @@ pub trait ASTVisitor<T> {
     fn visit_for_loop_statement(&mut self, statement: &ASTForStatement) -> T;
     fn visit_while_loop_statement(&mut self, statement: &ASTWhileStatement) -> T;
 
-    fn visit_funtion_statement(&mut self, function: &ASTFunctionStatement) -> T;
+    fn visit_function_statement(&mut self, function: &ASTFunctionStatement) -> T;
     // {
     //     if let ASTStatementKind::Compound(statement) = &function.body.kind {
     //         self.visit_compound_statement(statement);
@@ -619,7 +619,7 @@ mod test {
             }
         }
 
-        fn visit_funtion_statement(&mut self, function: &super::ASTFunctionStatement) {
+        fn visit_function_statement(&mut self, function: &super::ASTFunctionStatement) {
             let mut args: Vec<(String, TokenKind)> = Vec::new();
             args.push((
                 function.identifier.span.literal.clone(),

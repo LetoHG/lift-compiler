@@ -169,7 +169,7 @@ impl ASTVisitor<()> for ASTTreePrinter {
         self.decrease_indentation();
     }
 
-    fn visit_funtion_statement(&mut self, function: &super::ASTFunctionStatement) {
+    fn visit_function_statement(&mut self, function: &super::ASTFunctionStatement) {
         self.print(
             &format!(
                 "{}  Function: {}{}",
@@ -532,7 +532,7 @@ impl ASTVisitor<()> for ASTHiglightPrinter {
         self.add_newline();
     }
 
-    fn visit_funtion_statement(&mut self, function: &super::ASTFunctionStatement) {
+    fn visit_function_statement(&mut self, function: &super::ASTFunctionStatement) {
         self.print_with_indent(&format!(
             "{}func {}{}{}(",
             Fg(Self::FUNC_COLOR),

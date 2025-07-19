@@ -169,7 +169,7 @@ impl ASTVisitor<Option<()>> for ASTSolver {
         None
     }
 
-    fn visit_funtion_statement(&mut self, function: &super::ASTFunctionStatement) -> Option<()> {
+    fn visit_function_statement(&mut self, function: &super::ASTFunctionStatement) -> Option<()> {
         self.functions
             .insert(function.identifier.span.literal.clone(), function.clone());
 

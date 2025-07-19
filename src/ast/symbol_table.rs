@@ -350,7 +350,7 @@ impl ASTVisitor<Option<DataType>> for SymbolTable {
         }
     }
 
-    fn visit_funtion_statement(
+    fn visit_function_statement(
         &mut self,
         function: &super::ASTFunctionStatement,
     ) -> Option<DataType> {

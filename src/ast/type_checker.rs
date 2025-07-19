@@ -206,7 +206,7 @@ impl ASTVisitor<()> for TypeChecker {
         todo!()
     }
 
-    fn visit_funtion_statement(&mut self, function: &super::ASTFunctionStatement) {}
+    fn visit_function_statement(&mut self, function: &super::ASTFunctionStatement) {}
 
     fn visit_assignment_expression(&mut self, expr: &super::ASTAssignmentExpression) {
         todo!()
