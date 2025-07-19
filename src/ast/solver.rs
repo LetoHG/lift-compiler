@@ -191,6 +191,12 @@ impl ASTVisitor<Option<()>> for ASTSolver {
         &mut self,
         expr: &super::ASTFunctionCallExpression,
     ) -> Option<()> {
+        // TODO(letohg): [2025-07-19] support for builtin functions
+        if expr.identifier() == "println" {
+            println!("Println call with stuff...");
+            return None;
+        }
+
         if !self.check_identifier_in_scope(&expr.identifier.span.literal) {}
 
         let func = self

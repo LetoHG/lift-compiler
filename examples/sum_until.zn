@@ -1,4 +1,4 @@
-func sum_until(upper : i32, threshold : i32) -> i32 {
+func sum_until(upper : i32, threshold : i32) -> f32 {
     let sum : i32 = 0.0;
     for i in 0..100 {
         sum += i;

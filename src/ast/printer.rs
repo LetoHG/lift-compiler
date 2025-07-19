@@ -574,6 +574,10 @@ impl ASTVisitor<()> for ASTHiglightPrinter {
     }
 
     fn visit_function_call_expression(&mut self, expr: &super::ASTFunctionCallExpression) {
+        if expr.identifier() == "println" {
+            println!("Println call with stuff...");
+            return;
+        }
         self.print(&format!(
             "{}{}{}(",
             Fg(Self::FUNC_CALL_COLOR),

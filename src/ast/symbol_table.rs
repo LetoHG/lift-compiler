@@ -439,32 +439,33 @@ impl ASTVisitor<Option<DataType>> for SymbolTable {
         match self.pass {
             Pass::CollectSymbols => None,
             Pass::TypeCheck => {
-                if self.lookup(&expr.identifier().to_string()).is_none() {
+                if expr.identifier() == "println" {
+                } else if self.lookup(&expr.identifier().to_string()).is_none() {
                     self.diagnostics
                         .borrow_mut()
                         .report_undefined_function(expr.identifier.span.clone());
                     return None;
-                }
+                } else {
+                    let expected_number_of_arguments = match self.lookup(expr.identifier()).unwrap()
+                    {
+                        Symbol::Function(func) => func.parameters.len(),
+                        _ => {
+                            println!("Not a callable!");
+                            return None;
+                        }
+                    };
 
-                let expected_number_of_arguments = match self.lookup(expr.identifier()).unwrap() {
-                    Symbol::Function(func) => func.parameters.len(),
-                    _ => {
-                        println!("Not a callable!");
+                    if expected_number_of_arguments != expr.arguments.len() {
+                        self.diagnostics
+                            .borrow_mut()
+                            .report_number_of_function_arguments_mismatch(
+                                expr.identifier.span.clone(),
+                                expected_number_of_arguments,
+                                expr.arguments.len(),
+                            );
                         return None;
                     }
-                };
-
-                if expected_number_of_arguments != expr.arguments.len() {
-                    self.diagnostics
-                        .borrow_mut()
-                        .report_number_of_function_arguments_mismatch(
-                            expr.identifier.span.clone(),
-                            expected_number_of_arguments,
-                            expr.arguments.len(),
-                        );
-                    return None;
                 }
-
                 for arg in expr.arguments.iter() {
                     self.visit_expression(arg);
                 }
